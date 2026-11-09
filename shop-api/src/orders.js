@@ -35,7 +35,7 @@ function normPhone(p) {
 
 async function getOrder(db, orderNo) {
   const o = await db.query(
-    `SELECT o.*, c.name AS customer_name, c.phone AS customer_phone,
+    `SELECT o.*, c.name AS customer_name, c.phone AS customer_phone, c.email AS customer_email,
             c.wa_id, c.tg_chat_id, c.ig_scoped_id
        FROM orders o LEFT JOIN customers c ON c.id = o.customer_id
       WHERE o.order_no = $1`,
@@ -79,6 +79,7 @@ async function getOrder(db, orderNo) {
     customer: {
       name: r.customer_name,
       phone: r.customer_phone,
+      email: r.customer_email || '',
       wa_id: r.wa_id,
       tg_chat_id: r.tg_chat_id,
       ig_scoped_id: r.ig_scoped_id,
@@ -99,14 +100,14 @@ async function listOrders({ status, channel, q, limit, offset }) {
   if (channel) where.push(`o.channel = $${args.push(String(channel).toLowerCase())}`);
   if (q) {
     const n = args.push('%' + String(q).trim() + '%');
-    where.push(`(o.order_no ILIKE $${n} OR c.phone LIKE $${n} OR c.name ILIKE $${n})`);
+    where.push(`(o.order_no ILIKE $${n} OR c.phone LIKE $${n} OR c.name ILIKE $${n} OR c.email ILIKE $${n})`);
   }
   const lim = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
   const off = Math.max(parseInt(offset, 10) || 0, 0);
   args.push(lim, off);
   const { rows } = await pool.query(
     `SELECT o.order_no, o.status, o.channel, o.payment_mode, o.payment_status, o.total,
-            o.created_at, o.updated_at, c.name AS customer_name, c.phone AS customer_phone,
+            o.created_at, o.updated_at, c.name AS customer_name, c.phone AS customer_phone, c.email AS customer_email,
             (SELECT COALESCE(SUM(qty), 0) FROM order_items oi WHERE oi.order_id = o.id) AS items
        FROM orders o LEFT JOIN customers c ON c.id = o.customer_id
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
@@ -242,6 +243,7 @@ function validateCreate(body) {
     pincode: pincode && /^\d{6}$/.test(pincode) ? pincode : null,
     customer: {
       name: text(cust.name, 120),
+      email: text(cust.email || b.email, 150),
       wa_id: text(cust.wa_id, 60),
       tg_chat_id: text(cust.tg_chat_id, 60),
       ig_scoped_id: text(cust.ig_scoped_id, 60),
@@ -303,10 +305,11 @@ async function createInTx(c, input, actor) {
   let customerId = null;
   if (input.phone) {
     const cu = await c.query(
-      `INSERT INTO customers (name, phone, address, pincode, wa_id, tg_chat_id, ig_scoped_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+      `INSERT INTO customers (name, phone, email, address, pincode, wa_id, tg_chat_id, ig_scoped_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        ON CONFLICT (phone) DO UPDATE SET
          name = COALESCE(EXCLUDED.name, customers.name),
+         email = COALESCE(EXCLUDED.email, customers.email),
          address = COALESCE(EXCLUDED.address, customers.address),
          pincode = COALESCE(EXCLUDED.pincode, customers.pincode),
          wa_id = COALESCE(EXCLUDED.wa_id, customers.wa_id),
@@ -316,6 +319,7 @@ async function createInTx(c, input, actor) {
       [
         input.customer.name,
         input.phone,
+        input.customer.email,
         input.address,
         input.pincode,
         input.customer.wa_id,

@@ -273,6 +273,13 @@
           <div style="font-weight: 600; color: #111827;"><%= order.customer.phone || '—' %></div>
         </div>
 
+        <% if (order.customer.email) { %>
+        <div>
+          <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Email Address</span>
+          <div style="font-weight: 600; color: #111827;"><%= order.customer.email %></div>
+        </div>
+        <% } %>
+
         <div>
           <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Delivery Address</span>
           <div style="color: var(--text-main); margin-top: 2px; line-height: 1.4;"><%= order.ship_address || '—' %></div>

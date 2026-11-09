@@ -68,6 +68,25 @@
           <% } %>
         </div>
 
+        <!-- Email Address (Optional, for email notifications) -->
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address (Optional)</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-input <%= errors.email ? 'is-error' : '' %>"
+            placeholder="e.g. ananya@example.com (for receipts & updates)"
+            value="<%= form.email || '' %>"
+            autocomplete="email"
+          />
+          <% if (errors.email) { %>
+            <span class="field-error-msg"><%= errors.email %></span>
+          <% } else { %>
+            <span style="font-size: var(--text-2xs); color: var(--color-text-muted);">Optional: provide your email to receive order receipts and shipment emails.</span>
+          <% } %>
+        </div>
+
         <!-- Shipping Address -->
         <div class="form-group">
           <label for="address" class="form-label">Complete Street Address *</label>

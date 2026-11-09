@@ -68,6 +68,7 @@ const config = {
   mapsUrl: process.env.MAPS_URL || 'https://maps.google.com/?q=Chennai',
   shippingFlat: Math.max(0, parseFloat(process.env.SHIPPING_FLAT || '100') || 0),
   freeShippingAbove: Math.max(0, parseFloat(process.env.FREE_SHIPPING_ABOVE || '2500') || 2500),
+  n8nWebhookUrl: (process.env.N8N_ORDER_WEBHOOK_URL || process.env.ORDER_WEBHOOK_URL || '').trim(),
   trustProxy: process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true',
   siteContent
 };

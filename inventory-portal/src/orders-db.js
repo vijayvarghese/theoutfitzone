@@ -65,7 +65,7 @@ export async function listOrders({ status, channel, q, limit = 25, offset = 0 } 
   if (q) {
     const term = `%${String(q).trim()}%`;
     const n = args.push(term);
-    where.push(`(o.order_no ILIKE $${n} OR c.phone LIKE $${n} OR c.name ILIKE $${n} OR o.awb ILIKE $${n})`);
+    where.push(`(o.order_no ILIKE $${n} OR c.phone LIKE $${n} OR c.name ILIKE $${n} OR c.email ILIKE $${n} OR o.awb ILIKE $${n})`);
   }
 
   const lim = Math.min(Math.max(parseInt(limit, 10) || 25, 1), 100);
@@ -77,7 +77,7 @@ export async function listOrders({ status, channel, q, limit = 25, offset = 0 } 
     SELECT o.id, o.order_no, o.status, o.channel, o.payment_mode, o.payment_status,
            o.payment_ref, o.subtotal, o.shipping, o.total, o.courier, o.awb,
            o.created_at, o.updated_at,
-           c.name AS customer_name, c.phone AS customer_phone,
+           c.name AS customer_name, c.phone AS customer_phone, c.email AS customer_email,
            (SELECT COALESCE(SUM(qty), 0) FROM order_items oi WHERE oi.order_id = o.id) AS items_count
       FROM orders o
       LEFT JOIN customers c ON c.id = o.customer_id
@@ -112,7 +112,7 @@ export async function listOrders({ status, channel, q, limit = 25, offset = 0 } 
 export async function getOrder(orderNo) {
   const o = await pool.query(
     `SELECT o.*,
-            c.name AS customer_name, c.phone AS customer_phone,
+            c.name AS customer_name, c.phone AS customer_phone, c.email AS customer_email,
             c.address AS customer_address, c.pincode AS customer_pincode,
             c.wa_id, c.tg_chat_id, c.ig_scoped_id
        FROM orders o
@@ -168,6 +168,7 @@ export async function getOrder(orderNo) {
     customer: {
       name: r.customer_name || 'Valued Patron',
       phone: r.customer_phone,
+      email: r.customer_email || '',
       wa_id: r.wa_id,
       tg_chat_id: r.tg_chat_id,
       ig_scoped_id: r.ig_scoped_id

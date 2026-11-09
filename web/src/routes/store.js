@@ -10,6 +10,7 @@ const cart = require('../cart');
 const config = require('../config');
 const upiPayment = require('../payments/upi');
 const { checkRateLimit, maskPhone } = require('../security');
+const { dispatchOrderWebhook } = require('../webhook');
 
 const router = express.Router();
 
@@ -251,6 +252,7 @@ router.post('/checkout', async (req, res, next) => {
 
   const {
     name,
+    email,
     phone,
     address,
     pincode,
@@ -262,6 +264,7 @@ router.post('/checkout', async (req, res, next) => {
   // Strict server-side validation
   const errors = {};
   const cleanName = String(name || '').trim();
+  const cleanEmail = String(email || '').trim().toLowerCase();
   const cleanPhone = String(phone || '').replace(/\D/g, '');
   const cleanAddress = String(address || '').trim();
   const cleanPincode = String(pincode || '').trim();
@@ -269,6 +272,9 @@ router.post('/checkout', async (req, res, next) => {
 
   if (!cleanName || cleanName.length < 2) {
     errors.name = 'Please provide your full name.';
+  }
+  if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    errors.email = 'Please enter a valid email address or leave it blank.';
   }
   if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
     errors.phone = 'Please enter a valid 10-digit Indian mobile number.';
@@ -298,6 +304,7 @@ router.post('/checkout', async (req, res, next) => {
       errors,
       form: {
         name: cleanName,
+        email: cleanEmail,
         phone: cleanPhone,
         address: cleanAddress,
         pincode: cleanPincode,
@@ -313,7 +320,8 @@ router.post('/checkout', async (req, res, next) => {
     channel: 'web',
     customer: {
       name: cleanName,
-      phone: cleanPhone
+      phone: cleanPhone,
+      email: cleanEmail || null
     },
     ship_address: cleanAddress,
     ship_pincode: cleanPincode,
@@ -336,6 +344,14 @@ router.post('/checkout', async (req, res, next) => {
 
     // Clear cart upon successful order creation
     cart.clearCart(req);
+
+    // Asynchronously dispatch webhook to n8n
+    dispatchOrderWebhook({
+      event: 'order.created',
+      source: 'website',
+      actor: 'customer',
+      order
+    }).catch((e) => console.error('[webhook] Error dispatching order.created to n8n:', e.message));
 
     res.redirect(`/order/${encodeURIComponent(order.order_no)}`);
   } catch (err) {

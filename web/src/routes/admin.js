@@ -7,6 +7,7 @@ const express = require('express');
 const api = require('../api');
 const config = require('../config');
 const { constantTimeCompare, checkRateLimit, maskPhone } = require('../security');
+const { dispatchOrderWebhook } = require('../webhook');
 
 const router = express.Router();
 
@@ -199,6 +200,7 @@ router.post('/orders/:orderNo/status', async (req, res) => {
   const { status, courier, awb, note, restock } = req.body;
 
   try {
+    const prevOrder = await api.getOrder(orderNo);
     await api.updateOrderStatus(orderNo, {
       status,
       courier: courier ? String(courier).trim() : undefined,
@@ -206,6 +208,18 @@ router.post('/orders/:orderNo/status', async (req, res) => {
       note: note ? String(note).trim() : undefined,
       restock: restock === 'false' ? false : true
     });
+
+    const updatedOrder = await api.getOrder(orderNo);
+
+    // Asynchronously dispatch webhook to n8n
+    dispatchOrderWebhook({
+      event: status === 'CANCELLED' ? 'order.cancelled' : 'order.status_updated',
+      source: 'website-admin',
+      actor: 'Store Admin',
+      order: updatedOrder || prevOrder,
+      previousStatus: prevOrder ? prevOrder.status : null
+    }).catch((e) => console.error('[webhook] Error dispatching status update to n8n:', e.message));
+
     req.session.adminNotice = `Order #${orderNo} moved to ${status}.`;
   } catch (err) {
     if (err.status === 409 && err.details?.allowed) {
@@ -226,7 +240,19 @@ router.post('/orders/:orderNo/paid', async (req, res) => {
   const { payment_ref } = req.body;
 
   try {
+    const prevOrder = await api.getOrder(orderNo);
     await api.markOrderPaid(orderNo, payment_ref ? String(payment_ref).trim() : 'Manual Verification');
+    const updatedOrder = await api.getOrder(orderNo);
+
+    // Asynchronously dispatch webhook to n8n
+    dispatchOrderWebhook({
+      event: 'order.paid',
+      source: 'website-admin',
+      actor: 'Store Admin',
+      order: updatedOrder || prevOrder,
+      previousStatus: prevOrder ? prevOrder.status : null
+    }).catch((e) => console.error('[webhook] Error dispatching paid event to n8n:', e.message));
+
     req.session.adminNotice = `Payment marked PAID for Order #${orderNo}.`;
   } catch (err) {
     req.session.adminError = `Mark paid failed: ${err.message}`;

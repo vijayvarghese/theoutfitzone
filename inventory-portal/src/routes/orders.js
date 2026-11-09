@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth, requireRole } from '../auth.js';
 import { listOrders, getOrder, updateOrderStatus, markOrderPaid, STATUS_LIST } from '../orders-db.js';
+import { dispatchOrderWebhook } from '../webhook.js';
 
 const router = express.Router();
 
@@ -107,6 +108,8 @@ router.post('/:orderNo/status', async (req, res) => {
   const actor = req.user ? `${req.user.name} [${req.user.role}]` : 'Staff';
 
   try {
+    const prevOrder = await getOrder(orderNo);
+
     await updateOrderStatus(orderNo, {
       status,
       courier,
@@ -114,6 +117,17 @@ router.post('/:orderNo/status', async (req, res) => {
       note,
       restock: restock !== 'false'
     }, actor);
+
+    const updatedOrder = await getOrder(orderNo);
+    if (updatedOrder) {
+      dispatchOrderWebhook({
+        event: status === 'CANCELLED' ? 'order.cancelled' : 'order.status_updated',
+        source: 'inventory-portal',
+        actor,
+        order: updatedOrder,
+        previousStatus: prevOrder?.status
+      }).catch(err => console.error('[webhook dispatch error]', err));
+    }
 
     res.redirect(`/orders/${encodeURIComponent(orderNo)}?flash=${encodeURIComponent(`Order #${orderNo} transitioned to ${status}.`)}`);
   } catch (err) {
@@ -130,7 +144,21 @@ router.post('/:orderNo/paid', async (req, res) => {
   const actor = req.user ? `${req.user.name} [${req.user.role}]` : 'Staff';
 
   try {
+    const prevOrder = await getOrder(orderNo);
+
     await markOrderPaid(orderNo, payment_ref, actor);
+
+    const updatedOrder = await getOrder(orderNo);
+    if (updatedOrder) {
+      dispatchOrderWebhook({
+        event: 'order.paid',
+        source: 'inventory-portal',
+        actor,
+        order: updatedOrder,
+        previousStatus: prevOrder?.status
+      }).catch(err => console.error('[webhook dispatch error]', err));
+    }
+
     res.redirect(`/orders/${encodeURIComponent(orderNo)}?flash=${encodeURIComponent(`Payment marked PAID for Order #${orderNo}.`)}`);
   } catch (err) {
     res.redirect(`/orders/${encodeURIComponent(orderNo)}?error=${encodeURIComponent(err.message)}`);

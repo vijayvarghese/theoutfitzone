@@ -85,6 +85,9 @@ services:
       SHIPPING_FLAT: ${SHIPPING_FLAT:-100}
       FREE_SHIPPING_ABOVE: ${FREE_SHIPPING_ABOVE:-2500}
       TRUST_PROXY: ${TRUST_PROXY:-false}
+      N8N_ORDER_WEBHOOK_URL: ${N8N_ORDER_WEBHOOK_URL:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 10s
@@ -125,12 +128,16 @@ services:
       DATABASE_URL: postgres://shop:${DB_PASS}@db:5432/shop
       PORT: "3000"
       STORE_NAME: ${STORE_NAME:-Aura & Thread Atelier}
+      SITE_URL: ${SITE_URL:-http://localhost:8081}
       PUBLIC_MEDIA_URL: /products
       NGINX_PREVIEW_URL: http://localhost:8083
       AUTH_USER_OWNER: ${AUTH_USER_OWNER:-owner:owner123}
       AUTH_USER_STAFF1: ${AUTH_USER_STAFF1:-staff1:staff123}
       AUTH_USER_STOCK_ADDER: ${AUTH_USER_STOCK_ADDER:-stock_adder:stock123}
       SESSION_SECRET: ${PORTAL_SESSION_SECRET:-inventory-portal-super-secret-key-at-least-32-chars}
+      N8N_ORDER_WEBHOOK_URL: ${N8N_ORDER_WEBHOOK_URL:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 10s
