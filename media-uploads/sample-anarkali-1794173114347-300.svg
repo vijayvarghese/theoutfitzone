@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="750" viewBox="0 0 600 750">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D1B22"/>
+      <stop offset="100%" stop-color="#14110F"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EED5A5"/>
+      <stop offset="100%" stop-color="#B08D57"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="750" fill="url(#bg)"/>
+  <circle cx="300" cy="320" r="180" fill="none" stroke="url(#gold)" stroke-width="2" opacity="0.3"/>
+  <circle cx="300" cy="320" r="140" fill="none" stroke="url(#gold)" stroke-width="1.5" opacity="0.5"/>
+  <path d="M260 200 L340 200 L380 480 L220 480 Z" fill="none" stroke="url(#gold)" stroke-width="3"/>
+  <path d="M220 480 Q300 530 380 480" fill="none" stroke="url(#gold)" stroke-width="3"/>
+  <text x="300" y="580" fill="url(#gold)" font-family="serif" font-size="28" font-weight="bold" text-anchor="middle" letter-spacing="4">AURA &amp; THREAD</text>
+  <text x="300" y="620" fill="#FFFFFF" font-family="sans-serif" font-size="16" text-anchor="middle" letter-spacing="2" opacity="0.8">HANDLOOM SILHOUETTES</text>
+</svg>

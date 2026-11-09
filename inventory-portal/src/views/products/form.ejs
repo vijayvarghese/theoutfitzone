@@ -1,0 +1,179 @@
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+  <div class="card-header">
+    <h2 class="card-title">
+      <%= isEdit ? `Edit Silhouette #${product.id} — ${product.name}` : 'Register New Silhouette / Product' %>
+    </h2>
+    <a href="/products" class="btn btn-secondary btn-sm">&larr; Back to Catalog</a>
+  </div>
+
+  <form method="POST" action="<%= isEdit ? `/products/${product.id}` : '/products' %>" enctype="multipart/form-data">
+    <div class="card-body">
+      <!-- Section 1: Core Details -->
+      <div style="font-weight: 600; font-size: 14px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); color: var(--primary);">
+        1. Silhouette Specifications
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="name">Silhouette / Product Name *</label>
+        <input type="text" id="name" name="name" class="form-input" style="width: 100%;" value="<%= product.name || '' %>" placeholder="e.g. Handspun Maheshwari Silk Kurta" required autofocus>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label class="form-label" for="category-select">Category</label>
+          <select id="category-select" name="category" class="form-select" style="width: 100%;">
+            <option value="">-- Select Category --</option>
+            <% categories.forEach(cat => { %>
+              <option value="<%= cat %>" <%= product.category === cat ? 'selected' : '' %>><%= cat %></option>
+            <% }) %>
+            <option value="__new__">+ Create New Category...</option>
+          </select>
+
+          <div id="custom-category-group" style="display: none; margin-top: 8px;">
+            <input type="text" name="custom_category" class="form-input" style="width: 100%;" placeholder="Enter new category name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="price_inr">Base Price (₹ INR) *</label>
+          <input type="number" id="price_inr" name="price_inr" class="form-input" style="width: 100%;" value="<%= product.price_inr || '' %>" placeholder="2450" min="0" step="1" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Detailed Description</label>
+        <textarea id="description" name="description" class="form-textarea" rows="3" style="width: 100%;" placeholder="Describe the weave, fabric blend, zari border, styling notes..."><%= product.description || '' %></textarea>
+      </div>
+
+      <div class="form-group">
+        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+          <input type="checkbox" name="active" <%= (product.active !== false) ? 'checked' : '' %>>
+          <span><strong>Active in Catalog</strong> (Uncheck to temporarily hide from customer storefront)</span>
+        </label>
+      </div>
+
+      <!-- Section 2: Photography & Collection Tiles -->
+      <div style="font-weight: 600; font-size: 14px; margin: 28px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); color: var(--primary);">
+        2. Silhouette Photography (Nginx Media Server)
+      </div>
+
+      <% if (isEdit && product.image_url) { %>
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px; background: #F9FAFB; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <img src="<%= product.image_url %>" alt="<%= product.name %>" style="width: 68px; height: 68px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <div>
+            <div style="font-weight: 600; font-size: 13px;">Current Image Configured</div>
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin: 2px 0;"><%= product.image_url %></div>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--danger); cursor: pointer; margin-top: 4px;">
+              <input type="checkbox" name="remove_image" value="1">
+              <span>Remove this photo</span>
+            </label>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="form-group">
+        <label class="form-label">Upload Product Image</label>
+        <div class="dropzone">
+          <input type="file" name="image" accept="image/png, image/jpeg, image/webp, image/svg+xml, image/avif">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" style="margin: 0 auto 8px auto; display: block;">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <div style="font-weight: 600; font-size: 13px; color: var(--text-main);">Drag and drop a photo or click to browse</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Supports PNG, JPG, WebP, SVG up to 8MB. Images are saved into shared volume and served via Nginx.</div>
+
+          <div class="dropzone-preview" style="display: none;">
+            <img class="preview-img" src="" alt="New upload preview">
+            <div style="text-align: left;">
+              <div class="preview-name" style="font-weight: 600; font-size: 12px;"></div>
+              <div style="font-size: 11px; color: var(--success-text);">Ready for upload and Nginx delivery</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="manual_image_url">Or External Image URL (Optional)</label>
+        <input type="text" id="manual_image_url" name="manual_image_url" class="form-input" style="width: 100%;" placeholder="https://example.com/photo.jpg or /products/sample.jpg">
+      </div>
+
+      <!-- Section 3: Initial Variants Generator (Only on Add Product) -->
+      <% if (!isEdit) { %>
+        <div style="font-weight: 600; font-size: 14px; margin: 28px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+          <span>3. Initial Variant SKUs (Optional)</span>
+          <button type="button" class="btn btn-secondary btn-xs" id="btn-add-var-row">+ Add Variant Row</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">
+          <span>SKU</span>
+          <span>Size</span>
+          <span>Colour</span>
+          <span>On Hand</span>
+          <span>Reorder</span>
+          <span></span>
+        </div>
+
+        <div id="initial-variants-container">
+          <div class="variant-builder-row" style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; align-items: center;">
+            <input type="text" name="var_sku" class="form-input" placeholder="e.g. MSK-IVR-M" style="font-family: var(--font-mono); text-transform: uppercase;">
+            <input type="text" name="var_size" class="form-input" placeholder="M">
+            <input type="text" name="var_colour" class="form-input" placeholder="Ivory">
+            <input type="number" name="var_stock" class="form-input" value="10" min="0">
+            <input type="number" name="var_reorder" class="form-input" value="2" min="0">
+            <button type="button" class="btn btn-sm btn-outline-danger" style="padding: 0; width: 34px; height: 38px;" onclick="this.closest('.variant-builder-row').remove()" title="Remove row">✕</button>
+          </div>
+          <div class="variant-builder-row" style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; align-items: center;">
+            <input type="text" name="var_sku" class="form-input" placeholder="e.g. MSK-IVR-L" style="font-family: var(--font-mono); text-transform: uppercase;">
+            <input type="text" name="var_size" class="form-input" placeholder="L">
+            <input type="text" name="var_colour" class="form-input" placeholder="Ivory">
+            <input type="number" name="var_stock" class="form-input" value="10" min="0">
+            <input type="number" name="var_reorder" class="form-input" value="2" min="0">
+            <button type="button" class="btn btn-sm btn-outline-danger" style="padding: 0; width: 34px; height: 38px;" onclick="this.closest('.variant-builder-row').remove()" title="Remove row">✕</button>
+          </div>
+        </div>
+      <% } else if (variants && variants.length > 0) { %>
+        <!-- If in Edit mode, display configured variants -->
+        <div style="font-weight: 600; font-size: 14px; margin: 28px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); color: var(--primary);">
+          3. Currently Configured Variants (<%= variants.length %> SKUs)
+        </div>
+
+        <div class="table-responsive" style="margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+          <table class="portal-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Size</th>
+                <th>Colour</th>
+                <th>On Hand</th>
+                <th>Reserved</th>
+                <th>Available</th>
+                <th>Reorder</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% variants.forEach(v => { %>
+                <tr>
+                  <td><span class="sku-tag"><%= v.sku %></span></td>
+                  <td><%= v.size || '-' %></td>
+                  <td><%= v.colour || '-' %></td>
+                  <td><%= v.on_hand %></td>
+                  <td><%= v.reserved %></td>
+                  <td><strong style="color: var(--success);"><%= v.on_hand - v.reserved %></strong></td>
+                  <td><%= v.reorder_level %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="card-header" style="justify-content: flex-end; gap: 10px;">
+      <a href="/products" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        <%= isEdit ? 'Save Changes & Update Silhouette' : 'Create Silhouette & Save Variants &rarr;' %>
+      </button>
+    </div>
+  </form>
+</div>

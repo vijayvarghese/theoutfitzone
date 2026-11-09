@@ -1,0 +1,266 @@
+<!-- Filter & Search Toolbar -->
+<div class="filter-toolbar">
+  <form method="GET" action="/stock" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; width: 100%;">
+    <!-- Search Box -->
+    <div class="search-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" name="q" value="<%= filters.q %>" placeholder="Filter by SKU, product, colour, size..." autocomplete="off">
+    </div>
+
+    <!-- Product Filter -->
+    <select name="product_id" class="form-select" onchange="this.form.submit()">
+      <option value="">All Silhouettes</option>
+      <% products.forEach(p => { %>
+        <option value="<%= p.id %>" <%= filters.product_id == p.id ? 'selected' : '' %>><%= p.name %></option>
+      <% }) %>
+    </select>
+
+    <!-- Category Filter -->
+    <select name="category" class="form-select" onchange="this.form.submit()">
+      <option value="all">All Categories</option>
+      <% categories.forEach(cat => { %>
+        <option value="<%= cat %>" <%= filters.category === cat ? 'selected' : '' %>><%= cat %></option>
+      <% }) %>
+    </select>
+
+    <!-- Stock Status Filter -->
+    <select name="stock_status" class="form-select" onchange="this.form.submit()">
+      <option value="all" <%= filters.stock_status === 'all' ? 'selected' : '' %>>All Stock Statuses</option>
+      <option value="low" <%= filters.stock_status === 'low' ? 'selected' : '' %>>⚠️ Low Stock (&le; Reorder)</option>
+      <option value="out" <%= filters.stock_status === 'out' ? 'selected' : '' %>>❌ Out of Stock (0)</option>
+      <option value="healthy" <%= filters.stock_status === 'healthy' ? 'selected' : '' %>>✅ Healthy Stock</option>
+    </select>
+
+    <!-- Size Filter -->
+    <select name="size" class="form-select" onchange="this.form.submit()">
+      <option value="all" <%= filters.size === 'all' ? 'selected' : '' %>>All Sizes</option>
+      <option value="xs" <%= filters.size === 'xs' ? 'selected' : '' %>>XS</option>
+      <option value="s" <%= filters.size === 's' ? 'selected' : '' %>>S</option>
+      <option value="m" <%= filters.size === 'm' ? 'selected' : '' %>>M</option>
+      <option value="l" <%= filters.size === 'l' ? 'selected' : '' %>>L</option>
+      <option value="xl" <%= filters.size === 'xl' ? 'selected' : '' %>>XL</option>
+      <option value="xxl" <%= filters.size === 'xxl' ? 'selected' : '' %>>XXL</option>
+      <option value="free size" <%= filters.size === 'free size' ? 'selected' : '' %>>Free Size</option>
+    </select>
+
+    <!-- Sort Dropdown -->
+    <select name="sort" class="form-select" onchange="this.form.submit()">
+      <option value="product-asc" <%= filters.sort === 'product-asc' ? 'selected' : '' %>>Product Name (A-Z)</option>
+      <option value="sku-asc" <%= filters.sort === 'sku-asc' ? 'selected' : '' %>>SKU (A-Z)</option>
+      <option value="available-asc" <%= filters.sort === 'available-asc' ? 'selected' : '' %>>Available (Low &rarr; High)</option>
+      <option value="available-desc" <%= filters.sort === 'available-desc' ? 'selected' : '' %>>Available (High &rarr; Low)</option>
+      <option value="on-hand-desc" <%= filters.sort === 'on-hand-desc' ? 'selected' : '' %>>On Hand (High &rarr; Low)</option>
+    </select>
+
+    <div style="margin-left: auto; display: flex; gap: 8px;">
+      <a href="/stock" class="btn btn-secondary btn-sm" title="Clear Filters">Reset</a>
+      <% if (typeof canModifyStock !== 'undefined' && canModifyStock) { %>
+        <a href="/stock/bulk" class="btn btn-secondary btn-sm" title="Rapid stock count audit sheet">⚡ Shelf Count</a>
+        <button type="button" class="btn btn-primary btn-sm" data-modal-target="modal-add-variant">+ Add SKU</button>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<!-- Quick Aggregate Metrics Bar -->
+<div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+  <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px;">
+    Showing: <strong><%= variants.length %></strong> SKUs
+  </div>
+  <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px;">
+    Total Physical On Hand: <strong style="color: var(--text-main);"><%= totals.totalOnHand %></strong>
+  </div>
+  <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px;">
+    Available for Orders: <strong style="color: var(--success);"><%= totals.totalAvailable %></strong>
+  </div>
+  <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px;">
+    Held in Reservations: <strong style="color: var(--warning-text);"><%= totals.totalReserved %></strong>
+  </div>
+  <% if (totals.lowCount > 0) { %>
+    <div style="background: var(--warning-bg); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px; color: var(--warning-text);">
+      <strong><%= totals.lowCount %></strong> SKUs below reorder level
+    </div>
+  <% } %>
+  <% if (totals.outCount > 0) { %>
+    <div style="background: var(--danger-bg); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px; color: var(--danger-text);">
+      <strong><%= totals.outCount %></strong> SKUs completely sold out
+    </div>
+  <% } %>
+</div>
+
+<!-- Variant Matrix Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="portal-table">
+      <thead>
+        <tr>
+          <th style="width: 48px; text-align: center;">Photo</th>
+          <th>Silhouette & SKU</th>
+          <th style="width: 80px;">Size</th>
+          <th style="width: 110px;">Colour</th>
+          <th style="width: 85px;">On Hand</th>
+          <th style="width: 85px;">Reserved</th>
+          <th style="width: 100px;">Available</th>
+          <th style="width: 80px;">Reorder</th>
+          <th style="width: 130px;">Status</th>
+          <th style="width: 260px; text-align: right;">Inventory Control</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!variants.length) { %>
+          <tr>
+            <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              No variant SKUs found matching your filter criteria.
+            </td>
+          </tr>
+        <% } %>
+
+        <% variants.forEach(v => { %>
+          <tr>
+            <!-- Thumbnail -->
+            <td style="text-align: center;">
+              <% if (v.image_url && v.image_url.trim()) { %>
+                <img src="<%= v.image_url %>" alt="<%= v.product_name %>" class="prod-thumb" style="width: 38px; height: 38px;" onerror="this.onerror=null;this.parentElement.innerHTML='-';">
+              <% } else { %>
+                <div class="prod-thumb-placeholder" style="width: 38px; height: 38px; font-size: 10px;">-</div>
+              <% } %>
+            </td>
+
+            <!-- Silhouette & SKU -->
+            <td>
+              <div style="font-weight: 600; font-size: 13.5px; color: var(--text-main);">
+                <span class="sku-tag"><%= v.sku %></span>
+              </div>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
+                <a href="/products/<%= v.product_id %>/edit" style="color: var(--text-muted); text-decoration: none;">
+                  <%= v.product_name %> (<%= v.category || 'Uncategorized' %>)
+                </a>
+              </div>
+            </td>
+
+            <!-- Size -->
+            <td>
+              <strong><%= v.size || '-' %></strong>
+            </td>
+
+            <!-- Colour -->
+            <td>
+              <%= v.colour || '-' %>
+            </td>
+
+            <!-- On Hand -->
+            <td>
+              <strong><%= v.on_hand %></strong>
+            </td>
+
+            <!-- Reserved -->
+            <td>
+              <% if (v.reserved > 0) { %>
+                <span class="badge badge-warning" title="<%= v.reserved %> pieces reserved for pending/unpaid orders">
+                  <%= v.reserved %> res
+                </span>
+              <% } else { %>
+                <span style="color: var(--text-muted); font-size: 12px;">0</span>
+              <% } %>
+            </td>
+
+            <!-- Available -->
+            <td>
+              <strong style="color: <%= v.available <= 0 ? 'var(--danger)' : (v.available <= v.reorder_level ? 'var(--warning-text)' : 'var(--success)') %>; font-size: 14px;">
+                <%= v.available %>
+              </strong>
+            </td>
+
+            <!-- Reorder Threshold -->
+            <td>
+              <span style="color: var(--text-muted);"><%= v.reorder_level %></span>
+            </td>
+
+            <!-- Status Badge -->
+            <td>
+              <% if (v.available <= 0) { %>
+                <span class="badge badge-danger">Sold Out</span>
+              <% } else if (v.available <= v.reorder_level) { %>
+                <span class="badge badge-warning">Low Stock</span>
+              <% } else { %>
+                <span class="badge badge-success">Healthy</span>
+              <% } %>
+            </td>
+
+            <!-- Quick Restock and Audit Actions -->
+            <td style="text-align: right;">
+              <% if (typeof canModifyStock !== 'undefined' && canModifyStock) { %>
+                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                  <!-- One-click restock buttons -->
+                  <form method="POST" action="/stock/quick-adjust" style="display: inline; margin: 0;">
+                    <input type="hidden" name="variant_id" value="<%= v.variant_id %>">
+                    <input type="hidden" name="delta" value="5">
+                    <input type="hidden" name="reason" value="Quick restock (+5)">
+                    <button type="submit" class="btn btn-secondary btn-xs" title="Restock +5">+5</button>
+                  </form>
+
+                  <form method="POST" action="/stock/quick-adjust" style="display: inline; margin: 0;">
+                    <input type="hidden" name="variant_id" value="<%= v.variant_id %>">
+                    <input type="hidden" name="delta" value="10">
+                    <input type="hidden" name="reason" value="Quick restock (+10)">
+                    <button type="submit" class="btn btn-secondary btn-xs" title="Restock +10">+10</button>
+                  </form>
+
+                  <form method="POST" action="/stock/quick-adjust" style="display: inline; margin: 0;">
+                    <input type="hidden" name="variant_id" value="<%= v.variant_id %>">
+                    <input type="hidden" name="delta" value="-1">
+                    <input type="hidden" name="reason" value="Manual deduction (-1)">
+                    <button type="submit" class="btn btn-secondary btn-xs" title="Deduct -1">-1</button>
+                  </form>
+
+                  <!-- Full Audit Adjust Modal Trigger -->
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-xs btn-open-adjust-modal"
+                    data-variant-id="<%= v.variant_id %>"
+                    data-sku="<%= v.sku %>"
+                    data-product-name="<%= v.product_name %>"
+                    data-on-hand="<%= v.on_hand %>"
+                    data-reserved="<%= v.reserved %>"
+                    title="Audit adjust on hand count with reason"
+                  >
+                    Adjust...
+                  </button>
+
+                  <!-- Edit Specifications Modal Trigger -->
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-xs btn-open-edit-variant"
+                    data-variant-id="<%= v.variant_id %>"
+                    data-sku="<%= v.sku %>"
+                    data-size="<%= v.size || '' %>"
+                    data-colour="<%= v.colour || '' %>"
+                    data-reorder="<%= v.reorder_level %>"
+                    title="Edit SKU specifications"
+                  >
+                    ✏️
+                  </button>
+
+                  <!-- Delete Variant (Owner only) -->
+                  <% if (typeof canDelete !== 'undefined' && canDelete) { %>
+                    <form
+                      method="POST"
+                      action="/stock/variants/<%= v.variant_id %>/delete"
+                      class="confirm-action"
+                      data-confirm-message="Are you sure you want to permanently delete variant <%= v.sku %>? (Make sure no pending orders use this SKU)"
+                      style="display: inline; margin: 0;"
+                    >
+                      <button type="submit" class="btn btn-xs btn-outline-danger" title="Remove variant">✕</button>
+                    </form>
+                  <% } %>
+                </div>
+              <% } else { %>
+                <span class="badge" style="background: #F3F4F6; color: #6B7280; font-size: 11px;">View Only</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

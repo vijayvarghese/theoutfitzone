@@ -1,0 +1,60 @@
+<footer class="site-footer">
+  <div class="site-container">
+    <div class="footer-grid">
+      <!-- Col 1: Brand & Ethos -->
+      <div>
+        <h2 class="footer-brand-title"><%= storeName %></h2>
+        <p class="footer-sub" style="margin-bottom: var(--space-md);"><%= storeTagline %></p>
+        <p class="footer-sub" style="font-size: var(--text-xs); color: #8C847E;">
+          <%= config.storeAddress %>
+        </p>
+      </div>
+
+      <!-- Col 2: Navigation -->
+      <div>
+        <h3 class="footer-col-title">Navigation</h3>
+        <ul class="footer-links">
+          <li><a href="/shop" class="animated-link">All Silhouettes</a></li>
+          <li><a href="/about" class="animated-link">Our Weavers & Heritage</a></li>
+          <li><a href="/contact" class="animated-link">Atelier & Hours</a></li>
+          <li><a href="/track" class="animated-link">Track Your Shipment</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 3: Assistance & Contact -->
+      <div>
+        <h3 class="footer-col-title">Atelier Concierge</h3>
+        <ul class="footer-links">
+          <li><a href="https://wa.me/<%= config.whatsappNumber %>" target="_blank" rel="noopener noreferrer" class="animated-link">WhatsApp: +<%= config.whatsappNumber %></a></li>
+          <li><a href="tel:<%= config.contactPhone %>" class="animated-link"><%= config.contactPhone %></a></li>
+          <li><a href="mailto:<%= config.contactEmail %>" class="animated-link"><%= config.contactEmail %></a></li>
+          <li><a href="<%= config.mapsUrl %>" target="_blank" rel="noopener noreferrer" class="animated-link">View in Google Maps</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 4: Ethos & Assurance -->
+      <div>
+        <h3 class="footer-col-title">Devotion to Craft</h3>
+        <p class="footer-sub" style="font-size: var(--text-xs); margin-bottom: var(--space-sm);">
+          <%= site.footer.shippingBadge %>
+        </p>
+        <p class="footer-sub" style="font-size: var(--text-xs); margin-bottom: var(--space-md);">
+          <%= site.footer.returnPolicy %>
+        </p>
+        <a href="https://instagram.com/<%= config.instagramHandle %>" target="_blank" rel="noopener noreferrer" class="btn btn-dark btn-sm">
+          Follow @<%= config.instagramHandle %>
+        </a>
+      </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="footer-bottom">
+      <div>
+        &copy; <%= new Date().getFullYear() %> <%= storeName %>. <%= site.footer.copyright %>
+      </div>
+      <div>
+        Crafted with 100% natural handloom fibers. No synthetic blends.
+      </div>
+    </div>
+  </div>
+</footer>

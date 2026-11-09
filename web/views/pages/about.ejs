@@ -1,0 +1,96 @@
+<div class="site-container" style="padding-top: var(--space-2xl); padding-bottom: var(--space-3xl); max-width: 900px;">
+  <!-- Editorial Header -->
+  <div style="text-align: center; margin-bottom: var(--space-3xl);">
+    <span class="eyebrow-label"><%= site.about.heroEyebrow %></span>
+    <h1 class="section-title font-serif" style="font-size: var(--text-3xl); max-width: 760px; margin: 0 auto var(--space-md) auto;">
+      <%= site.about.title %>
+    </h1>
+    <p class="section-subtitle" style="font-size: var(--text-lg); margin: 0 auto; color: var(--color-text);">
+      <%= site.about.lead %>
+    </p>
+  </div>
+
+  <!-- Facts Row -->
+  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-md); margin-bottom: var(--space-3xl); padding: var(--space-xl) 0; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);" class="facts-grid">
+    <style>
+      @media (min-width: 768px) {
+        .facts-grid {
+          grid-template-columns: repeat(4, 1fr) !important;
+        }
+      }
+    </style>
+    <% (site.about.facts || []).forEach((fact, idx) => { %>
+      <div style="text-align: center;" class="reveal-on-scroll" style="--i: <%= idx %>;">
+        <div class="font-serif" style="font-size: var(--text-2xl); color: var(--color-oxblood); font-weight: 600;">
+          <%= fact.value %>
+        </div>
+        <div style="font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-muted); margin-top: 4px;">
+          <%= fact.label %>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+
+  <!-- Narrative Story -->
+  <article style="display: flex; flex-direction: column; gap: var(--space-lg); font-size: var(--text-md); line-height: 1.8; color: var(--color-text); margin-bottom: var(--space-3xl);">
+    <% (site.about.storyParagraphs || []).forEach(p => { %>
+      <p><%= p %></p>
+    <% }) %>
+  </article>
+
+  <!-- Core Values Grid -->
+  <section style="margin-bottom: var(--space-3xl);">
+    <span class="eyebrow-label">Guiding Principles</span>
+    <h2 class="section-title font-serif" style="margin-bottom: var(--space-xl);">Our Sourcing Values</h2>
+
+    <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-lg);" class="values-grid">
+      <style>
+        @media (min-width: 680px) {
+          .values-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+      </style>
+      <% (site.about.values || []).forEach((val, idx) => { %>
+        <div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: var(--space-lg); border-radius: var(--radius-xs);" class="reveal-on-scroll" style="--i: <%= idx %>;">
+          <h3 class="font-serif" style="font-size: var(--text-md); margin-bottom: var(--space-xs); color: var(--color-oxblood);">
+            <%= val.title %>
+          </h3>
+          <p style="font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.6;">
+            <%= val.description %>
+          </p>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+
+  <!-- How We Pick Our Pieces (Process) -->
+  <section style="background: var(--color-surface); border: 1px solid var(--color-border); padding: var(--space-2xl); border-radius: var(--radius-xs);">
+    <div style="text-align: center; margin-bottom: var(--space-xl);">
+      <span class="eyebrow-label">Atelier Workflow</span>
+      <h2 class="section-title font-serif"><%= site.about.curationProcess.headline %></h2>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: var(--space-xl);">
+      <% (site.about.curationProcess.steps || []).forEach(step => { %>
+        <div style="display: flex; gap: var(--space-lg); align-items: flex-start;">
+          <div class="font-serif" style="font-size: var(--text-2xl); color: var(--color-brass); font-weight: 600; line-height: 1; min-width: 44px;">
+            <%= step.step %>
+          </div>
+          <div>
+            <h3 class="font-serif" style="font-size: var(--text-md); margin-bottom: 4px; color: var(--color-text);">
+              <%= step.title %>
+            </h3>
+            <p style="font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.6;">
+              <%= step.description %>
+            </p>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+
+  <div style="text-align: center; margin-top: var(--space-3xl);">
+    <a href="/shop" class="btn btn-primary">Explore Handloom Silhouettes</a>
+  </div>
+</div>

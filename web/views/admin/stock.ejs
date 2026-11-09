@@ -1,0 +1,580 @@
+<div style="margin-bottom: var(--space-xl);">
+  <span class="eyebrow-label">Inventory Control</span>
+  <h1 class="font-serif" style="font-size: var(--text-2xl); color: #14110F;">Stock Levels & Auditing</h1>
+  <p style="font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 4px;">
+    Live sync with shop-api. All adjustments are logged into the stock movements audit log.
+  </p>
+</div>
+
+<!-- Important Notice: Reserved Stock Rule -->
+<div style="background-color: var(--color-status-warn-bg); border-left: 4px solid var(--color-status-warn); color: var(--color-status-warn); padding: var(--space-md); border-radius: var(--radius-xs); margin-bottom: var(--space-xl); font-size: var(--text-xs); line-height: 1.5;">
+  <strong>⚠️ Rule on Reserved Stock:</strong>
+  "Reserved" stock is calculated automatically by open orders (NEW, PENDING_PAYMENT, CONFIRMED).
+  Do NOT attempt to override reservations manually. Adding or removing stock changes <code>on_hand</code>.
+  Stock cannot be reduced below current active reservations.
+</div>
+
+<!-- Stock Adjustment Form -->
+<div id="stock-adjust-panel" style="background: #FFFFFF; border: 1px solid var(--color-border); border-radius: var(--radius-xs); padding: var(--space-xl); margin-bottom: var(--space-2xl); box-shadow: var(--shadow-subtle); transition: box-shadow 0.3s ease;">
+  <h2 class="font-serif" style="font-size: var(--text-md); margin-bottom: var(--space-sm);">
+    Adjust Variant Stock Level
+  </h2>
+  <p style="font-size: var(--text-xs); color: var(--color-text-muted); margin-bottom: var(--space-md);">
+    Specify SKU, signed integer delta (+5 to add stock, -2 to remove), and an audit reason.
+  </p>
+
+  <form method="POST" action="/admin/stock/adjust" style="display: flex; gap: var(--space-md); flex-wrap: wrap; align-items: flex-end;">
+    <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+
+    <div class="form-group" style="margin: 0; min-width: 180px;">
+      <label for="sku" class="form-label">Variant SKU *</label>
+      <input type="text" id="sku" name="sku" class="form-input" placeholder="e.g. KOR-IVR-M" required style="min-height: 40px; text-transform: uppercase;" />
+    </div>
+
+    <div class="form-group" style="margin: 0; width: 120px;">
+      <label for="delta" class="form-label">Delta (+ / -) *</label>
+      <input type="number" id="delta" name="delta" class="form-input" placeholder="e.g. 10 or -2" required style="min-height: 40px;" />
+    </div>
+
+    <div class="form-group" style="margin: 0; flex: 1; min-width: 220px;">
+      <label for="reason" class="form-label">Audit Reason *</label>
+      <input type="text" id="reason" name="reason" class="form-input" placeholder="e.g. Weaver delivery batch #4, damaged sample" required style="min-height: 40px;" />
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="height: 40px;">
+      Apply Adjustment &rarr;
+    </button>
+  </form>
+</div>
+
+<!-- Low Stock Alerts Section -->
+<% if (lowStockItems && lowStockItems.length > 0) { %>
+  <div style="background: #FFFFFF; border: 1px solid #FFCDD2; border-radius: var(--radius-xs); padding: var(--space-lg); margin-bottom: var(--space-2xl);">
+    <h2 class="font-serif" style="font-size: var(--text-md); color: var(--color-status-error); margin-bottom: var(--space-sm); display: flex; align-items: center; gap: 8px;">
+      <span>⚠️</span> Low Stock & Reorder Alerts (<%= lowStockItems.length %> items)
+    </h2>
+    <div style="overflow-x: auto;">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Product</th>
+            <th>Variant</th>
+            <th>On Hand</th>
+            <th>Reserved</th>
+            <th>Available</th>
+            <th>Reorder Level</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% lowStockItems.forEach(it => { %>
+            <tr style="background: <%= it.available <= 0 ? '#FFEBEE' : '#FFFDE7' %>;">
+              <td style="font-family: monospace; font-weight: 600;"><%= it.sku %></td>
+              <td><%= it.product %></td>
+              <td><%= it.size %> / <%= it.colour %></td>
+              <td><%= it.on_hand %></td>
+              <td><%= it.reserved %></td>
+              <td style="font-weight: 700; color: <%= it.available <= 0 ? '#C62828' : '#F57F17' %>;">
+                <%= it.available %>
+              </td>
+              <td><%= it.reorder_level %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<!-- Complete Variant Catalog Section (Master-Detail Inventory Table) -->
+<%
+  const allProducts = products || [];
+  let totalVariantsCount = 0;
+  let totalAvailableCount = 0;
+  let lowStockTotalCount = 0;
+
+  allProducts.forEach(p => {
+    (p.variants || []).forEach(v => {
+      totalVariantsCount += 1;
+      totalAvailableCount += (Number(v.available) || 0);
+      if (v.available <= v.reorder_level) {
+        lowStockTotalCount += 1;
+      }
+    });
+  });
+
+  const sizePriority = {
+    'xs': 1, 's': 2, 'm': 3, 'l': 4, 'xl': 5, 'xxl': 6, '2xl': 6, '3xl': 7,
+    'free size': 10, 'free': 10, 'os': 10, 'one size': 10
+  };
+%>
+
+<style>
+  /* Inlined styles ensuring zero-dependency, pixel-perfect tabular layout */
+  .inventory-card {
+    background: #FFFFFF;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    box-shadow: var(--shadow-subtle);
+    margin-bottom: var(--space-2xl);
+    overflow: hidden;
+  }
+  .inventory-card-top {
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    background: #FFFFFF;
+  }
+  .inventory-title-line {
+    font-size: var(--text-lg);
+    color: #14110F;
+    margin: 0 0 4px 0;
+    font-weight: 600;
+  }
+  .inventory-sub-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-md);
+  }
+  .inventory-toolbar-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+  }
+  .inventory-search-box {
+    position: relative;
+    flex: 1;
+    min-width: 240px;
+    max-width: 420px;
+  }
+  .inventory-search-box svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+  .inventory-search-box input {
+    width: 100%;
+    height: 38px;
+    padding: 0 12px 0 32px;
+    font-size: var(--text-xs);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    background-color: #FAF9F6;
+    color: var(--color-text);
+  }
+  .inventory-search-box input:focus {
+    outline: none;
+    border-color: var(--color-oxblood);
+    background-color: #FFFFFF;
+  }
+  .inventory-tools-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+  .inventory-table-container {
+    overflow-x: auto;
+    background: #FFFFFF;
+  }
+  .inventory-master-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-xs);
+    margin: 0;
+  }
+  .inventory-master-table > thead > tr > th {
+    background-color: #F8F9FA;
+    padding: 11px 14px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    white-space: nowrap;
+  }
+  .product-master-row {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  .product-master-row:hover {
+    background-color: #FAF8F5;
+  }
+  .product-master-row.is-expanded {
+    background-color: #F6F2EB;
+  }
+  .product-master-row > td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+  }
+  .product-master-row .product-chevron-icon {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    color: var(--color-text-muted);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s ease;
+    display: block;
+    margin: 0 auto;
+  }
+  .product-master-row.is-expanded .product-chevron-icon {
+    transform: rotate(90deg);
+    color: var(--color-oxblood);
+  }
+  .variant-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 9px;
+    border-radius: 13px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(176, 141, 87, 0.12);
+    color: #7A5B28;
+    border: 1px solid rgba(176, 141, 87, 0.35);
+    white-space: nowrap;
+  }
+  .variant-count-badge.zero-variants {
+    background: #F1F1F1;
+    color: #757575;
+    border-color: #E0E0E0;
+  }
+  .product-stock-pill {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 8px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    border-radius: var(--radius-xs);
+    white-space: nowrap;
+  }
+  .product-stock-pill.in-stock { background: #E8F5E9; color: #2E7D32; }
+  .product-stock-pill.low-stock { background: #FFF8E1; color: #B78103; }
+  .product-stock-pill.out-stock { background: #FFEBEE; color: #C62828; }
+  .product-stock-pill.no-variants { background: #F5F5F5; color: #9E9E9E; }
+
+  .variants-detail-row {
+    display: none;
+  }
+  .variants-detail-row.is-open {
+    display: table-row;
+  }
+</style>
+
+<div class="inventory-card">
+  <!-- Top Card Header & Search Toolbar -->
+  <div class="inventory-card-top">
+    <div>
+      <h2 class="inventory-title-line font-serif">
+        Complete Variant Inventory Overview
+      </h2>
+      <div class="inventory-sub-line">
+        <span>Listing <strong id="product-count-display"><%= allProducts.length %></strong> silhouettes across <strong><%= totalVariantsCount %></strong> total variants</span>
+        <span style="opacity: 0.4;">&bull;</span>
+        <span style="font-weight: 500; color: <%= totalAvailableCount > 0 ? 'var(--color-status-success)' : 'var(--color-status-error)' %>;">
+          <strong><%= totalAvailableCount %></strong> pieces in stock
+        </span>
+        <% if (lowStockTotalCount > 0) { %>
+          <span style="opacity: 0.4;">&bull;</span>
+          <span style="font-weight: 500; color: var(--color-status-warn);">
+            <strong><%= lowStockTotalCount %></strong> variants at/below reorder level
+          </span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Controls Row -->
+    <div class="inventory-toolbar-flex">
+      <!-- Search Input -->
+      <div class="inventory-search-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="search"
+          id="inventory-search"
+          placeholder="Filter silhouettes, SKUs, sizes, colours..."
+          autocomplete="off"
+        />
+      </div>
+
+      <!-- Sort & Action Buttons -->
+      <div class="inventory-tools-right">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label for="inventory-sort-select" style="font-size: var(--text-xs); color: var(--color-text-muted); font-weight: 500;">Sort:</label>
+          <select id="inventory-sort-select" class="form-select" style="height: 38px; padding: 0 26px 0 10px; font-size: var(--text-xs); border: 1px solid var(--color-border); border-radius: var(--radius-xs); background-color: #FAF9F6; cursor: pointer;">
+            <option value="id-asc">Silhouette ID (Default)</option>
+            <option value="name-asc">Name (A &rarr; Z)</option>
+            <option value="name-desc">Name (Z &rarr; A)</option>
+            <option value="category-asc">Category</option>
+            <option value="variants-desc">Most Variants</option>
+            <option value="stock-desc">Stock (High &rarr; Low)</option>
+            <option value="stock-asc">Stock (Low &rarr; High)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 6px;">
+          <button type="button" id="btn-expand-all" class="btn btn-secondary btn-sm" style="height: 38px; display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; font-size: 0.72rem; font-weight: 500;" title="Expand all silhouettes">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="7 13 12 18 17 13"></polyline>
+              <polyline points="7 6 12 11 17 6"></polyline>
+            </svg>
+            <span>Expand All</span>
+          </button>
+          <button type="button" id="btn-collapse-all" class="btn btn-secondary btn-sm" style="height: 38px; display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; font-size: 0.72rem; font-weight: 500;" title="Collapse all silhouettes">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="17 11 12 6 7 11"></polyline>
+              <polyline points="17 18 12 13 7 18"></polyline>
+            </svg>
+            <span>Collapse All</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Master Table Structure -->
+  <div class="inventory-table-container">
+    <table class="inventory-master-table" id="inventory-master-table">
+      <thead>
+        <tr>
+          <th style="width: 44px; text-align: center;"></th>
+          <th>Silhouette / Product</th>
+          <th style="width: 120px;">Category</th>
+          <th style="width: 110px;">Base Price</th>
+          <th style="width: 125px;">Variants</th>
+          <th style="width: 140px;">Status</th>
+          <th style="width: 170px;">Physical Stock</th>
+        </tr>
+      </thead>
+
+      <% if (allProducts.length === 0) { %>
+        <tbody>
+          <tr>
+            <td colspan="7" style="padding: var(--space-2xl); text-align: center; color: var(--color-text-muted); font-size: var(--text-sm);">
+              No products found in the database.
+            </td>
+          </tr>
+        </tbody>
+      <% } %>
+
+      <% allProducts.forEach((p, idx) => { %>
+        <%
+          const rawVariants = p.variants || [];
+          const variantCount = rawVariants.length;
+          const totalOnHand = rawVariants.reduce((s, v) => s + (Number(v.on_hand) || 0), 0);
+          const totalReserved = rawVariants.reduce((s, v) => s + (Number(v.reserved) || 0), 0);
+          const totalAvailable = rawVariants.reduce((s, v) => s + (Number(v.available) || 0), 0);
+          const hasLowStock = rawVariants.some(v => v.available <= v.reorder_level);
+          const skuSearchTerms = rawVariants.map(v => `${v.sku || ''} ${v.colour || ''} ${v.size || ''}`).join(' ').toLowerCase();
+
+          // Standardize size ordering (XS -> S -> M -> L -> XL -> Free Size)
+          const variants = [...rawVariants].sort((a, b) => {
+            const sA = (a.size || '').toLowerCase().trim();
+            const sB = (b.size || '').toLowerCase().trim();
+            const pA = sizePriority[sA] || 99;
+            const pB = sizePriority[sB] || 99;
+            if (pA !== pB) return pA - pB;
+            return (a.sku || '').localeCompare(b.sku || '');
+          });
+        %>
+
+        <tbody
+          class="product-group"
+          id="product-group-<%= p.id %>"
+          data-product-id="<%= p.id %>"
+          data-product-name="<%= (p.name || '').toLowerCase() %>"
+          data-category="<%= (p.category || '').toLowerCase() %>"
+          data-variant-count="<%= variantCount %>"
+          data-available-stock="<%= totalAvailable %>"
+          data-skus="<%= skuSearchTerms %>"
+        >
+          <!-- Master Product Row -->
+          <tr class="product-master-row <%= (variantCount > 0 && idx === 0) ? 'is-expanded' : '' %>" data-target="variants-<%= p.id %>">
+            <td style="text-align: center; width: 44px;">
+              <svg class="product-chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </td>
+
+            <td>
+              <div style="font-family: var(--font-serif); font-size: 0.95rem; font-weight: 600; color: #14110F;">
+                <%= p.name %>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 2px;">
+                #<%= p.id %> &bull; <%= p.description ? p.description.slice(0, 52) + (p.description.length > 52 ? '...' : '') : 'Catalog Silhouette' %>
+              </div>
+            </td>
+
+            <td style="width: 120px;">
+              <% if (p.category) { %>
+                <span class="product-cat-pill" style="display: inline-block; font-size: 0.65rem; padding: 2px 8px; border-radius: 3px; background-color: #EDE8DE; color: var(--color-text); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">
+                  <%= p.category %>
+                </span>
+              <% } else { %>
+                <span style="color: var(--color-text-muted); font-size: 0.75rem;">—</span>
+              <% } %>
+            </td>
+
+            <td style="width: 110px; font-weight: 600; font-size: 0.85rem; color: #14110F;">
+              ₹<%= Number(p.price_inr || 0).toLocaleString('en-IN') %>
+            </td>
+
+            <td style="width: 125px;">
+              <div class="variant-count-badge <%= variantCount === 0 ? 'zero-variants' : '' %>" title="<%= variantCount %> <%= variantCount === 1 ? 'variant' : 'variants' %> configured">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
+                <span><%= variantCount %></span>
+                <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;"><%= variantCount === 1 ? 'var' : 'vars' %></span>
+              </div>
+            </td>
+
+            <td style="width: 140px;">
+              <% if (variantCount === 0) { %>
+                <span class="product-stock-pill no-variants">No Variants</span>
+              <% } else if (totalAvailable <= 0) { %>
+                <span class="product-stock-pill out-stock">Sold Out (0)</span>
+              <% } else if (hasLowStock) { %>
+                <span class="product-stock-pill low-stock"><%= totalAvailable %> Avail (Low)</span>
+              <% } else { %>
+                <span class="product-stock-pill in-stock"><%= totalAvailable %> in stock</span>
+              <% } %>
+            </td>
+
+            <td style="width: 170px;">
+              <% if (variantCount > 0) { %>
+                <div style="font-size: 0.72rem; color: var(--color-text-muted); white-space: nowrap;">
+                  <span>On Hand: <strong style="color: #14110F;"><%= totalOnHand %></strong></span>
+                  <span style="margin: 0 4px; opacity: 0.35;">|</span>
+                  <span>Res: <strong style="color: #14110F;"><%= totalReserved %></strong></span>
+                </div>
+              <% } else { %>
+                <span style="color: var(--color-text-muted); font-size: 0.75rem;">—</span>
+              <% } %>
+            </td>
+          </tr>
+
+          <!-- Sub-Row: Variant Detail Table (Collapsible) -->
+          <tr class="variants-detail-row <%= (variantCount > 0 && idx === 0) ? 'is-open' : '' %>" id="variants-<%= p.id %>">
+            <td colspan="7" style="padding: 0; border-bottom: 2px solid var(--color-border);">
+              <div style="background: #FAF8F5; padding: 16px 20px; border-top: 1px solid var(--color-border);">
+                <% if (variantCount > 0) { %>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                    <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted);">
+                      Variants for "<%= p.name %>" (<%= variantCount %> SKUs)
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--color-text-muted);">
+                      Quick Restock: click <strong>+5</strong> or <strong>+10</strong> &bull; <strong>Adjust...</strong> populates audit form
+                    </div>
+                  </div>
+
+                  <div style="overflow-x: auto; background: #FFFFFF; border: 1px solid var(--color-border); border-radius: var(--radius-xs);">
+                    <table class="admin-table" style="margin: 0;">
+                      <thead>
+                        <tr>
+                          <th style="width: 140px;">SKU</th>
+                          <th style="width: 80px;">Size</th>
+                          <th style="width: 120px;">Colour</th>
+                          <th style="width: 80px;">On Hand</th>
+                          <th style="width: 80px;">Reserved</th>
+                          <th style="width: 90px;">Available</th>
+                          <th style="width: 90px;">Reorder</th>
+                          <th style="width: 100px;">Status</th>
+                          <th style="width: 170px;">Quick Restock</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% variants.forEach(v => { %>
+                          <tr class="variant-data-row" data-sku="<%= (v.sku || '').toLowerCase() %>" data-size="<%= (v.size || '').toLowerCase() %>" data-colour="<%= (v.colour || '').toLowerCase() %>">
+                            <td style="font-family: monospace; font-weight: 600; font-size: 0.85rem;"><%= v.sku %></td>
+                            <td style="font-weight: 600;"><%= v.size || '-' %></td>
+                            <td><%= v.colour || '-' %></td>
+                            <td><%= v.on_hand %></td>
+                            <td><%= v.reserved %></td>
+                            <td style="font-weight: 700; color: <%= v.available <= 0 ? 'var(--color-status-error)' : (v.available <= v.reorder_level ? 'var(--color-status-warn)' : 'var(--color-status-success)') %>;">
+                              <%= v.available %>
+                            </td>
+                            <td><%= v.reorder_level %></td>
+                            <td>
+                              <% if (v.available <= 0) { %>
+                                <span class="status-badge badge-CANCELLED" style="font-size: 0.65rem;">Sold Out</span>
+                              <% } else if (v.available <= v.reorder_level) { %>
+                                <span class="status-badge badge-PENDING_PAYMENT" style="font-size: 0.65rem;">Low Stock</span>
+                              <% } else { %>
+                                <span class="status-badge badge-CONFIRMED" style="font-size: 0.65rem;">Healthy</span>
+                              <% } %>
+                            </td>
+                            <td>
+                              <div style="display: inline-flex; align-items: center; gap: 4px;">
+                                <form method="POST" action="/admin/stock/adjust" style="display: inline-flex; gap: 4px; margin: 0;">
+                                  <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+                                  <input type="hidden" name="sku" value="<%= v.sku %>">
+                                  <input type="hidden" name="reason" value="Quick restock (+5) from stock panel">
+                                  <button type="submit" name="delta" value="5" class="btn btn-secondary btn-sm" style="padding: 2px 7px; font-size: 0.68rem; font-weight: 600;" title="Quick restock 5 pieces">
+                                    +5
+                                  </button>
+                                </form>
+                                <form method="POST" action="/admin/stock/adjust" style="display: inline-flex; gap: 4px; margin: 0;">
+                                  <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+                                  <input type="hidden" name="sku" value="<%= v.sku %>">
+                                  <input type="hidden" name="reason" value="Quick restock (+10) from stock panel">
+                                  <button type="submit" name="delta" value="10" class="btn btn-secondary btn-sm" style="padding: 2px 7px; font-size: 0.68rem; font-weight: 600;" title="Quick restock 10 pieces">
+                                    +10
+                                  </button>
+                                </form>
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-fill-sku"
+                                  data-sku="<%= v.sku %>"
+                                  style="padding: 2px 7px; font-size: 0.68rem; background: transparent; border: 1px solid var(--color-border); color: var(--color-text-muted);"
+                                  title="Pre-fill top adjustment form with this SKU"
+                                >
+                                  Adjust...
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                <% } else { %>
+                  <div style="padding: 24px; text-align: center; background: #FFFFFF; border: 1px dashed var(--color-border); border-radius: var(--radius-xs);">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-brass-dark)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 6px;">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                      <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                      <line x1="2" y1="2" x2="22" y2="22"></line>
+                    </svg>
+                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--color-text); margin-bottom: 4px;">
+                      No Variants Configured for "<%= p.name %>"
+                    </div>
+                    <p style="font-size: var(--text-xs); color: var(--color-text-muted); max-width: 480px; margin: 0 auto; line-height: 1.5;">
+                      This product silhouette is registered in your catalog (Price: ₹<%= Number(p.price_inr || 0).toLocaleString('en-IN') %>), but has 0 SKUs/sizes defined.
+                      Add variants in your database or NocoDB to track inventory and make this product available for customer orders.
+                    </p>
+                  </div>
+                <% } %>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      <% }) %>
+    </table>
+  </div>
+</div>

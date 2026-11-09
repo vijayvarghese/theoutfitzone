@@ -1,0 +1,29 @@
+{
+  "name": "shop-web",
+  "version": "1.0.0",
+  "description": "Production-ready storefront and administrative portal for independent dress store",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "mock:api": "node dev/mock-api.js"
+  },
+  "dependencies": {
+    "cookie-session": "^2.1.0",
+    "ejs": "^3.1.10",
+    "express": "^5.0.1",
+    "helmet": "^8.0.0",
+    "lenis": "^1.3.27",
+    "qrcode": "^1.5.4",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/playfair-display": "^5.3.0"
+  },
+  "packageJustifications": {
+    "@fontsource/inter": "Fonts self-hosted through @fontsource packages per specification (WOFF2 latin body font).",
+    "@fontsource/playfair-display": "Fonts self-hosted through @fontsource packages per specification (WOFF2 latin heading serif)."
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

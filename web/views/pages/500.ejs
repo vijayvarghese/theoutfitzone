@@ -1,0 +1,25 @@
+<div class="site-container" style="padding-top: var(--space-3xl); padding-bottom: var(--space-3xl); text-align: center; max-width: 640px;">
+  <span class="eyebrow-label eyebrow-label-oxblood">Atelier Service Notice</span>
+  <h1 class="font-serif" style="font-size: var(--text-3xl); line-height: 1.1; margin-bottom: var(--space-md); color: var(--color-text);">
+    <%= title || "We'll Be Right Back" %>
+  </h1>
+  <p style="font-size: var(--text-base); color: var(--color-text-muted); line-height: 1.7; margin-bottom: var(--space-2xl);">
+    <%= message || "Our studio inventory system is momentarily synchronizing with our master weavers. Please refresh the page in a moment." %>
+  </p>
+
+  <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+    <button type="button" onclick="window.location.reload();" class="btn btn-primary">
+      Try Refreshing
+    </button>
+    <a href="/" class="btn btn-secondary">
+      Return to Atelier
+    </a>
+  </div>
+
+  <div style="margin-top: var(--space-2xl); border-top: 1px solid var(--color-border); padding-top: var(--space-lg); font-size: var(--text-xs); color: var(--color-text-muted);">
+    Need immediate urgent assistance with an order? Reach our team directly via
+    <a href="https://wa.me/<%= config.whatsappNumber %>" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; color: var(--color-oxblood);">
+      WhatsApp (+<%= config.whatsappNumber %>)
+    </a>.
+  </div>
+</div>

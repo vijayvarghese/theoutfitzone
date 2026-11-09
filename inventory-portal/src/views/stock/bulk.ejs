@@ -1,0 +1,116 @@
+<div class="card" style="max-width: 1100px; margin: 0 auto;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Bulk Shelf Count & Physical Stock Take</h2>
+      <div style="font-size: 12px; color: var(--text-muted);">
+        Enter verified physical counts directly. Any changed quantities are atomically updated and logged to the audit trail.
+      </div>
+    </div>
+    <a href="/stock" class="btn btn-secondary btn-sm">&larr; Back to Matrix</a>
+  </div>
+
+  <!-- Scope filter toolbar -->
+  <div style="padding: 16px 20px; background: #FAFAFA; border-bottom: 1px solid var(--border-color);">
+    <form method="GET" action="/stock/bulk" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      <label style="font-size: 12.5px; font-weight: 600; color: var(--text-muted);">Audit Scope:</label>
+
+      <select name="category" class="form-select" onchange="this.form.submit()">
+        <option value="all">All Categories</option>
+        <% categories.forEach(cat => { %>
+          <option value="<%= cat %>" <%= filters.category === cat ? 'selected' : '' %>><%= cat %></option>
+        <% }) %>
+      </select>
+
+      <select name="product_id" class="form-select" onchange="this.form.submit()">
+        <option value="">All Silhouettes</option>
+        <% products.forEach(p => { %>
+          <option value="<%= p.id %>" <%= filters.product_id == p.id ? 'selected' : '' %>><%= p.name %></option>
+        <% }) %>
+      </select>
+
+      <div style="margin-left: auto;">
+        <span style="font-size: 12px; color: var(--text-muted);">Counting <strong><%= variants.length %></strong> SKUs</span>
+      </div>
+    </form>
+  </div>
+
+  <!-- Form for submitting verified counts -->
+  <form method="POST" action="/stock/bulk">
+    <div class="table-responsive">
+      <table class="portal-table">
+        <thead>
+          <tr>
+            <th>Silhouette</th>
+            <th>SKU</th>
+            <th style="width: 80px;">Size</th>
+            <th style="width: 100px;">Colour</th>
+            <th style="width: 100px; text-align: center;">System On Hand</th>
+            <th style="width: 90px; text-align: center;">Reserved</th>
+            <th style="width: 160px; text-align: center;">Verified Physical Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!variants.length) { %>
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                No variants found in the selected scope.
+              </td>
+            </tr>
+          <% } %>
+
+          <% variants.forEach((v, idx) => { %>
+            <tr class="bulk-row">
+              <input type="hidden" name="variant_id" value="<%= v.variant_id %>">
+              <td>
+                <div style="font-weight: 600; font-size: 13.5px;"><%= v.product_name %></div>
+                <div style="font-size: 11px; color: var(--text-muted);"><%= v.category || 'Uncategorized' %></div>
+              </td>
+              <td><span class="sku-tag"><%= v.sku %></span></td>
+              <td><%= v.size || '-' %></td>
+              <td><%= v.colour || '-' %></td>
+              <td style="text-align: center; font-weight: 600; font-size: 14px;"><%= v.on_hand %></td>
+              <td style="text-align: center; color: var(--warning-text);"><%= v.reserved %></td>
+              <td style="text-align: center;">
+                <input
+                  type="number"
+                  name="count"
+                  class="form-input"
+                  style="width: 110px; text-align: center; font-weight: 700; font-size: 14px; margin: 0 auto;"
+                  value="<%= v.on_hand %>"
+                  min="<%= v.reserved %>"
+                  required
+                >
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Audit Reason & Submit Footer -->
+    <div style="padding: 20px; background-color: #FAFAFA; border-top: 1px solid var(--border-color);">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div>
+          <label class="form-label">Audit Event Reason *</label>
+          <select name="reason" class="form-select" style="width: 100%;" required>
+            <option value="Physical Store Stock Take">Quarterly / Monthly Physical Stock Take</option>
+            <option value="Weekly Shelf Audit">Weekly Shelf Spot Audit</option>
+            <option value="Inventory Reconciliation">Warehouse Inbound Reconciliation</option>
+            <option value="Year-End Stock Audit">Annual / Year-End Stock Audit</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Staff Sign-off & Notes (Optional)</label>
+          <input type="text" name="notes" class="form-input" style="width: 100%;" placeholder="e.g. Conducted by Priya & Aarav - Section 4">
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <a href="/stock" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" <%= !variants.length ? 'disabled' : '' %>>
+          Apply & Save Verified Counts &rarr;
+        </button>
+      </div>
+    </div>
+  </form>
+</div>

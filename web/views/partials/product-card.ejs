@@ -1,0 +1,53 @@
+<%
+  const totalAvailable = (product.variants || []).reduce((acc, v) => acc + (v.available || 0), 0);
+  const isSoldOut = !product.in_stock || totalAvailable <= 0;
+  const isLowStock = !isSoldOut && totalAvailable <= 3;
+%>
+<article class="product-card reveal-on-scroll" data-product-id="<%= product.id %>" style="--i: <%= (typeof index !== 'undefined' ? index % 8 : 0) %>;">
+  <!-- Product Media with badges -->
+  <div class="product-card-media">
+    <% if (isSoldOut) { %>
+      <span class="card-badge card-badge-soldout">Sold Out</span>
+    <% } else if (isLowStock) { %>
+      <span class="card-badge card-badge-lowstock">Only <%= totalAvailable %> left</span>
+    <% } %>
+
+    <a href="/product/<%= product.id %>" class="product-card-link" aria-label="View <%= product.name %>">
+      <% if (product.image_url && product.image_url.trim()) { %>
+        <img
+          src="<%= product.image_url %>"
+          alt="<%= product.name %>"
+          class="product-card-img"
+          loading="lazy"
+          onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'product-placeholder\'><span class=\'placeholder-initials\'><%= getInitials(product.name) %></span><span class=\'placeholder-tag\'>Aura & Thread</span></div>';"
+        />
+      <% } else { %>
+        <div class="product-placeholder">
+          <span class="placeholder-initials"><%= getInitials(product.name) %></span>
+          <span class="placeholder-tag">Aura & Thread</span>
+        </div>
+      <% } %>
+    </a>
+  </div>
+
+  <!-- Meta details -->
+  <div class="product-card-meta">
+    <span class="product-category-meta"><%= product.category %></span>
+    <h3 class="product-card-title">
+      <a href="/product/<%= product.id %>" class="product-card-link"><%= product.name %></a>
+    </h3>
+    <div class="product-card-price">
+      <%= formatInr(product.price_inr) %>
+    </div>
+
+    <!-- Quick View Progressive Action Button -->
+    <button type="button" class="btn btn-secondary btn-sm quickview-trigger" style="margin-top: 8px;" aria-label="Quick view <%= product.name %>">
+      Quick View
+    </button>
+  </div>
+
+  <!-- Embedded JSON for instant zero-latency client modal -->
+  <script type="application/json" id="product-data-<%= product.id %>">
+    <%- JSON.stringify(product) %>
+  </script>
+</article>

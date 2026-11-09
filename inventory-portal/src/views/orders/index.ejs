@@ -1,0 +1,173 @@
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+  <div>
+    <h2 style="font-size: 20px; font-weight: 700; color: #111827; margin: 0;">Fulfillment & Orders Queue</h2>
+    <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+      Total of <%= totalCount %> orders &bull; Showing page <%= page %> of <%= totalPages %>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <form method="GET" action="/orders" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+    <select name="status" class="form-select" style="min-width: 170px;">
+      <option value="">All Statuses (<%= totalCount %>)</option>
+      <% statusList.forEach(s => { %>
+        <option value="<%= s %>" <%= status === s ? 'selected' : '' %>><%= s %></option>
+      <% }) %>
+    </select>
+
+    <input
+      type="search"
+      name="q"
+      class="form-input"
+      placeholder="Order #, phone, patron name..."
+      value="<%= q %>"
+      style="min-width: 240px;"
+    >
+
+    <button type="submit" class="btn btn-secondary btn-sm" style="height: 38px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <span>Filter</span>
+    </button>
+
+    <% if (status || q) { %>
+      <a href="/orders" class="btn btn-sm" style="color: var(--text-muted); text-decoration: underline;">Clear</a>
+    <% } %>
+  </form>
+</div>
+
+<!-- Quick Status Filter Pills -->
+<div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
+  <a href="/orders" class="badge" style="text-decoration: none; padding: 6px 12px; background: <%= !status ? '#111827' : '#E5E7EB' %>; color: <%= !status ? '#FFFFFF' : '#374151' %>; font-weight: 600;">
+    All
+  </a>
+  <a href="/orders?status=NEW" class="badge badge-warning" style="text-decoration: none; padding: 6px 12px; <%= status === 'NEW' ? 'outline: 2px solid #F59E0B;' : '' %>">
+    NEW
+  </a>
+  <a href="/orders?status=PENDING_PAYMENT" class="badge badge-warning" style="text-decoration: none; padding: 6px 12px; <%= status === 'PENDING_PAYMENT' ? 'outline: 2px solid #F59E0B;' : '' %>">
+    PENDING PAYMENT
+  </a>
+  <a href="/orders?status=CONFIRMED" class="badge" style="text-decoration: none; padding: 6px 12px; background: #DBEAFE; color: #1E40AF; <%= status === 'CONFIRMED' ? 'outline: 2px solid #2563EB;' : '' %>">
+    CONFIRMED (TO PACK)
+  </a>
+  <a href="/orders?status=PACKED" class="badge" style="text-decoration: none; padding: 6px 12px; background: #EDE9FE; color: #5B21B6; <%= status === 'PACKED' ? 'outline: 2px solid #7C3AED;' : '' %>">
+    PACKED (TO SHIP)
+  </a>
+  <a href="/orders?status=SHIPPED" class="badge" style="text-decoration: none; padding: 6px 12px; background: #E0E7FF; color: #3730A3; <%= status === 'SHIPPED' ? 'outline: 2px solid #4F46E5;' : '' %>">
+    SHIPPED
+  </a>
+  <a href="/orders?status=DELIVERED" class="badge badge-success" style="text-decoration: none; padding: 6px 12px; <%= status === 'DELIVERED' ? 'outline: 2px solid #10B981;' : '' %>">
+    DELIVERED
+  </a>
+</div>
+
+<!-- Orders Table -->
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Order Number</th>
+          <th>Patron / Customer</th>
+          <th>Channel</th>
+          <th>Payment</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Placed</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (orders && orders.length > 0) { %>
+          <% orders.forEach(o => { %>
+            <tr>
+              <td>
+                <a href="/orders/<%= o.order_no %>" style="font-weight: 700; color: #4F46E5; text-decoration: none; font-family: var(--font-mono);">
+                  <%= o.order_no %>
+                </a>
+                <% if (o.awb) { %>
+                  <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+                    AWB: <%= o.awb %>
+                  </div>
+                <% } %>
+              </td>
+              <td>
+                <div style="font-weight: 600; color: var(--text-main);"><%= o.customer_name || 'Guest Patron' %></div>
+                <div style="font-size: 12px; color: var(--text-muted);"><%= o.customer_phone || '—' %></div>
+              </td>
+              <td>
+                <span class="badge" style="background: #F3F4F6; color: #374151; font-size: 11px; text-transform: uppercase;">
+                  <%= o.channel %>
+                </span>
+              </td>
+              <td>
+                <div>
+                  <span style="font-size: 12px; font-weight: 600; color: <%= o.payment_status === 'PAID' ? 'var(--success-text)' : 'var(--warning-text)' %>;">
+                    <%= o.payment_status %>
+                  </span>
+                  <div style="font-size: 11px; color: var(--text-muted);"><%= o.payment_mode %></div>
+                </div>
+              </td>
+              <td>
+                <span style="font-weight: 600;"><%= o.items_count %></span> <span style="font-size: 12px; color: var(--text-muted);">pcs</span>
+              </td>
+              <td style="font-weight: 700; color: #111827;">
+                <%= formatInr(o.total) %>
+              </td>
+              <td>
+                <% if (o.status === 'DELIVERED') { %>
+                  <span class="badge badge-success">DELIVERED</span>
+                <% } else if (o.status === 'CONFIRMED') { %>
+                  <span class="badge" style="background: #DBEAFE; color: #1E40AF;">CONFIRMED</span>
+                <% } else if (o.status === 'PACKED') { %>
+                  <span class="badge" style="background: #EDE9FE; color: #5B21B6;">PACKED</span>
+                <% } else if (o.status === 'SHIPPED') { %>
+                  <span class="badge" style="background: #E0E7FF; color: #3730A3;">SHIPPED</span>
+                <% } else if (o.status === 'CANCELLED' || o.status === 'REFUNDED') { %>
+                  <span class="badge badge-danger"><%= o.status %></span>
+                <% } else { %>
+                  <span class="badge badge-warning"><%= o.status %></span>
+                <% } %>
+              </td>
+              <td style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">
+                <%= formatDate(o.created_at) %>
+              </td>
+              <td style="text-align: right;">
+                <a href="/orders/<%= o.order_no %>" class="btn btn-secondary btn-sm" style="padding: 4px 10px;">
+                  Manage &rarr;
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 48px; color: var(--text-muted);">
+              No customer orders found matching this query or filter.
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination Controls -->
+<% if (totalPages > 1) { %>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+    <div style="font-size: 13px; color: var(--text-muted);">
+      Page <%= page %> of <%= totalPages %> (<%= totalCount %> orders total)
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <% if (page > 1) { %>
+        <a href="/orders?page=<%= page - 1 %><%= status ? '&status=' + status : '' %><%= q ? '&q=' + encodeURIComponent(q) : '' %>" class="btn btn-secondary btn-sm">
+          &larr; Previous Page
+        </a>
+      <% } %>
+      <% if (page < totalPages) { %>
+        <a href="/orders?page=<%= page + 1 %><%= status ? '&status=' + status : '' %><%= q ? '&q=' + encodeURIComponent(q) : '' %>" class="btn btn-secondary btn-sm">
+          Next Page &rarr;
+        </a>
+      <% } %>
+    </div>
+  </div>
+<% } %>

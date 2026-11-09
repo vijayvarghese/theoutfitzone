@@ -1,0 +1,51 @@
+<!-- Quick View Progressive Enhancement Dialog -->
+<dialog id="quick-view-modal" class="quickview-dialog" aria-modal="true" role="dialog" aria-label="Product Quick View">
+  <div class="modal-content-card">
+    <button type="button" class="modal-close-btn" aria-label="Close product quick view">&times;</button>
+
+    <div class="modal-product-grid">
+      <!-- Media column -->
+      <div class="modal-product-media">
+        <!-- Rendered dynamically by quickview.js -->
+      </div>
+
+      <!-- Info & Variant Selector column -->
+      <div class="modal-product-info">
+        <div>
+          <span class="modal-stock-badge card-badge card-badge-instock" style="position: static; margin-bottom: 8px;">In Stock</span>
+          <h2 class="modal-title font-serif" style="font-size: var(--text-xl); line-height: 1.2; margin-bottom: 4px;"></h2>
+          <div class="modal-price font-serif" style="font-size: var(--text-lg); color: var(--color-oxblood); font-weight: 600;"></div>
+        </div>
+
+        <p class="modal-desc" style="font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.6;"></p>
+
+        <!-- Dynamic Variant Selectors (Size, Colour) -->
+        <div class="modal-variants-container"></div>
+
+        <!-- Add To Bag Form -->
+        <form class="modal-add-form" method="POST" action="/cart/add">
+          <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+          <input type="hidden" name="sku" class="modal-sku-input" value="">
+
+          <div style="display: flex; gap: var(--space-md); align-items: center; margin-top: var(--space-sm);">
+            <!-- Stepper -->
+            <div class="qty-stepper" style="height: 44px;">
+              <button type="button" class="qty-btn modal-qty-minus" aria-label="Decrease quantity" style="width: 36px; height: 100%;">−</button>
+              <input type="number" name="qty" class="qty-val modal-qty-input" value="1" min="1" max="1" readonly style="width: 44px; height: 100%; border: none; background: transparent;" />
+              <button type="button" class="qty-btn modal-qty-plus" aria-label="Increase quantity" style="width: 36px; height: 100%;">+</button>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary modal-submit-btn" style="flex: 1;">
+              Add to Bag
+            </button>
+          </div>
+        </form>
+
+        <div style="margin-top: var(--space-xs); font-size: var(--text-2xs); color: var(--color-brass-dark); text-transform: uppercase; letter-spacing: 0.08em; text-align: center;">
+          🌿 100% GOTS Handspun Organic Cotton / Pure Silk
+        </div>
+      </div>
+    </div>
+  </div>
+</dialog>

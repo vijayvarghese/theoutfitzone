@@ -1,0 +1,224 @@
+<!-- Filter & Search Toolbar -->
+<div class="filter-toolbar">
+  <form method="GET" action="/products" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; width: 100%;">
+    <!-- Search -->
+    <div class="search-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" name="q" value="<%= filters.q %>" placeholder="Search silhouettes, descriptions, SKUs..." autocomplete="off">
+    </div>
+
+    <!-- Category Filter -->
+    <select name="category" class="form-select" onchange="this.form.submit()">
+      <option value="all">All Categories</option>
+      <% categories.forEach(cat => { %>
+        <option value="<%= cat %>" <%= filters.category === cat ? 'selected' : '' %>><%= cat %></option>
+      <% }) %>
+    </select>
+
+    <!-- Status Filter -->
+    <select name="status" class="form-select" onchange="this.form.submit()">
+      <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Active Silhouettes</option>
+      <option value="archived" <%= filters.status === 'archived' ? 'selected' : '' %>>Archived Silhouettes</option>
+      <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All Statuses</option>
+    </select>
+
+    <!-- Image Status Filter -->
+    <select name="image" class="form-select" onchange="this.form.submit()">
+      <option value="all" <%= filters.image === 'all' ? 'selected' : '' %>>All Photos</option>
+      <option value="with" <%= filters.image === 'with' ? 'selected' : '' %>>Has Photography</option>
+      <option value="missing" <%= filters.image === 'missing' ? 'selected' : '' %>>Missing Image</option>
+    </select>
+
+    <!-- Sort Dropdown -->
+    <select name="sort" class="form-select" onchange="this.form.submit()">
+      <option value="id-asc" <%= filters.sort === 'id-asc' ? 'selected' : '' %>>ID (Ascending)</option>
+      <option value="id-desc" <%= filters.sort === 'id-desc' ? 'selected' : '' %>>ID (Descending)</option>
+      <option value="name-asc" <%= filters.sort === 'name-asc' ? 'selected' : '' %>>Name (A &rarr; Z)</option>
+      <option value="name-desc" <%= filters.sort === 'name-desc' ? 'selected' : '' %>>Name (Z &rarr; A)</option>
+      <option value="price-desc" <%= filters.sort === 'price-desc' ? 'selected' : '' %>>Price (High &rarr; Low)</option>
+      <option value="price-asc" <%= filters.sort === 'price-asc' ? 'selected' : '' %>>Price (Low &rarr; High)</option>
+      <option value="stock-desc" <%= filters.sort === 'stock-desc' ? 'selected' : '' %>>Stock (High &rarr; Low)</option>
+    </select>
+
+    <div style="margin-left: auto; display: flex; gap: 8px;">
+      <a href="/products" class="btn btn-secondary btn-sm" title="Clear Filters">Reset</a>
+      <% if (typeof canManageCatalog !== 'undefined' && canManageCatalog) { %>
+        <a href="/products/new" class="btn btn-primary btn-sm">+ Add New Silhouette</a>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<!-- Products Data Table -->
+<div class="card">
+  <div class="card-header">
+    <div style="font-weight: 600; font-size: 14px;">
+      Showing <strong><%= products.length %></strong> silhouettes
+    </div>
+    <div style="font-size: 12px; color: var(--text-muted);">
+      Uploaded images are automatically served by Nginx to the main storefront collection tiles.
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="portal-table">
+      <thead>
+        <tr>
+          <th style="width: 60px; text-align: center;">Photo</th>
+          <th>Silhouette Details</th>
+          <th style="width: 130px;">Category</th>
+          <th style="width: 120px;">Base Price</th>
+          <th style="width: 110px;">Variants</th>
+          <th style="width: 160px;">Inventory Status</th>
+          <th style="width: 100px;">Active</th>
+          <th style="width: 220px; text-align: right;">Staff Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!products.length) { %>
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              No silhouettes match your current filter criteria.
+            </td>
+          </tr>
+        <% } %>
+
+        <% products.forEach(p => { %>
+          <tr>
+            <!-- Image Thumbnail -->
+            <td style="text-align: center;">
+              <% if (p.image_url && p.image_url.trim()) { %>
+                <img
+                  src="<%= p.image_url %>"
+                  alt="<%= p.name %>"
+                  class="prod-thumb"
+                  title="Photo configured: <%= p.image_url %>"
+                  onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'prod-thumb-placeholder\'>IMG</div>';"
+                />
+              <% } else { %>
+                <div class="prod-thumb-placeholder" title="No photography uploaded yet">
+                  No Pic
+                </div>
+              <% } %>
+            </td>
+
+            <!-- Name and description -->
+            <td>
+              <div style="font-weight: 600; font-size: 14px; color: var(--text-main);">
+                <a href="/products/<%= p.id %>/edit" style="color: var(--text-main); text-decoration: none;">
+                  <%= p.name %>
+                </a>
+                <% if (!p.active) { %>
+                  <span class="badge badge-neutral" style="margin-left: 6px;">Archived</span>
+                <% } %>
+              </div>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
+                #<%= p.id %> &bull; <%= p.description ? (p.description.slice(0, 65) + (p.description.length > 65 ? '...' : '')) : 'No description provided' %>
+              </div>
+            </td>
+
+            <!-- Category -->
+            <td>
+              <% if (p.category) { %>
+                <span class="badge badge-neutral"><%= p.category %></span>
+              <% } else { %>
+                <span style="color: var(--text-muted); font-size: 12px;">—</span>
+              <% } %>
+            </td>
+
+            <!-- Price -->
+            <td style="font-weight: 600; font-size: 13.5px;">
+              <%= formatInr(p.price_inr) %>
+            </td>
+
+            <!-- Variants count -->
+            <td>
+              <a href="/stock?product_id=<%= p.id %>" class="badge badge-primary" style="text-decoration: none;" title="View SKUs for this silhouette">
+                <%= p.variant_count %> <%= p.variant_count === '1' ? 'var' : 'vars' %>
+              </a>
+            </td>
+
+            <!-- Stock status -->
+            <td>
+              <% if (p.variant_count === '0' || p.variant_count === 0) { %>
+                <span class="badge badge-neutral">0 SKUs</span>
+              <% } else if (p.total_available <= 0) { %>
+                <span class="badge badge-danger">Sold Out (0)</span>
+              <% } else if (p.has_low_stock) { %>
+                <span class="badge badge-warning"><%= p.total_available %> Avail (Low)</span>
+              <% } else { %>
+                <span class="badge badge-success"><%= p.total_available %> Avail</span>
+              <% } %>
+              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">
+                On Hand: <%= p.total_on_hand %> | Res: <%= p.total_reserved %>
+              </div>
+            </td>
+
+            <!-- Active Toggle -->
+            <td>
+              <% if (typeof canManageCatalog !== 'undefined' && canManageCatalog) { %>
+                <form method="POST" action="/products/<%= p.id %>/toggle-status" style="margin: 0;">
+                  <button
+                    type="submit"
+                    class="btn btn-xs <%= p.active ? 'btn-secondary' : 'btn-primary' %>"
+                    title="Toggle active status"
+                  >
+                    <%= p.active ? 'Active' : 'Archived' %>
+                  </button>
+                </form>
+              <% } else { %>
+                <span class="badge <%= p.active ? 'badge-success' : 'badge-neutral' %>" style="font-size: 11px;">
+                  <%= p.active ? 'Active' : 'Archived' %>
+                </span>
+              <% } %>
+            </td>
+
+            <!-- Actions -->
+            <td style="text-align: right;">
+              <div style="display: inline-flex; align-items: center; gap: 4px;">
+                <% if (typeof canManageCatalog !== 'undefined' && canManageCatalog) { %>
+                  <!-- Fast Photo Upload Modal Trigger -->
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-xs btn-open-image-modal"
+                    data-product-id="<%= p.id %>"
+                    data-product-name="<%= p.name %>"
+                    data-image-url="<%= p.image_url || '' %>"
+                    title="Upload or change product photo"
+                  >
+                    📷 Photo
+                  </button>
+
+                  <!-- Edit details -->
+                  <a href="/products/<%= p.id %>/edit" class="btn btn-secondary btn-xs" title="Edit silhouette details">
+                    ✏️ Edit
+                  </a>
+                <% } %>
+
+                <!-- Manage stock -->
+                <a href="/stock?product_id=<%= p.id %>" class="btn btn-secondary btn-xs" title="Manage variant stock">
+                  📦 Stock
+                </a>
+
+                <!-- Delete Product (Owner only) -->
+                <% if (typeof canDelete !== 'undefined' && canDelete) { %>
+                  <form
+                    method="POST"
+                    action="/products/<%= p.id %>/delete"
+                    class="confirm-action"
+                    data-confirm-message="Are you certain you want to permanently delete '<%= p.name %>' (#<%= p.id %>)? All variants and stock will be deleted!"
+                    style="display: inline; margin: 0;"
+                  >
+                    <button type="submit" class="btn btn-xs btn-outline-danger" title="Permanently delete silhouette">
+                      ✕
+                    </button>
+                  </form>
+                <% } %>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

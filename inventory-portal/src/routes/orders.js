@@ -1,0 +1,140 @@
+import express from 'express';
+import { requireAuth, requireRole } from '../auth.js';
+import { listOrders, getOrder, updateOrderStatus, markOrderPaid, STATUS_LIST } from '../orders-db.js';
+
+const router = express.Router();
+
+// Both Owner and Staff1 have access to orders; Stock Adder is excluded
+router.use(requireAuth);
+router.use(requireRole('owner', 'staff1'));
+
+function buildCustomerWhatsAppUrl(order, storeName) {
+  const phone = (order.customer && order.customer.phone) || '';
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  const cleanPhone = digits.length === 10 ? `91${digits}` : digits;
+
+  let msg = '';
+  const name = order.customer.name || 'Valued Patron';
+
+  switch (order.status) {
+    case 'NEW':
+    case 'PENDING_PAYMENT':
+      msg = `Hello ${name}! Thank you for your order with ${storeName}. Your Order #${order.order_no} for ₹${Number(order.total).toLocaleString('en-IN')} is awaiting payment confirmation. Please let us know once transferred!`;
+      break;
+    case 'CONFIRMED':
+      msg = `Hello ${name}! We have confirmed your payment for Order #${order.order_no}. Our team has reserved your pieces and is preparing your order for fulfillment.`;
+      break;
+    case 'PACKED':
+      msg = `Hello ${name}! Your Order #${order.order_no} has been hand-inspected, packed in our signature boutique bag, and is waiting for courier dispatch.`;
+      break;
+    case 'SHIPPED':
+      msg = `Hello ${name}! Wonderful news: your Order #${order.order_no} has shipped via ${order.courier || 'Express Courier'}${order.awb ? ` (AWB Tracking: ${order.awb})` : ''}.`;
+      break;
+    case 'DELIVERED':
+      msg = `Hello ${name}! Your Order #${order.order_no} has been delivered. We hope you love your handcrafted piece!`;
+      break;
+    default:
+      msg = `Hello ${name}! We are contacting you from ${storeName} regarding Order #${order.order_no}. How can we assist you today?`;
+  }
+
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+}
+
+/**
+ * GET /orders
+ */
+router.get('/', async (req, res, next) => {
+  try {
+    const status = req.query.status || '';
+    const q = req.query.q || '';
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = 25;
+    const offset = (page - 1) * limit;
+
+    const result = await listOrders({ status, q, limit, offset });
+    const totalPages = Math.ceil(result.totalCount / limit) || 1;
+
+    res.render('orders/index', {
+      title: 'Customer Orders Fulfillment Queue',
+      orders: result.orders,
+      totalCount: result.totalCount,
+      statusList: STATUS_LIST,
+      status,
+      q,
+      page,
+      totalPages,
+      limit
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /orders/:orderNo
+ */
+router.get('/:orderNo', async (req, res, next) => {
+  try {
+    const orderNo = req.params.orderNo.toUpperCase();
+    const order = await getOrder(orderNo);
+
+    if (!order) {
+      return res.status(404).render('error', {
+        title: 'Order Not Found',
+        message: `Order #${orderNo} was not found in the database.`
+      });
+    }
+
+    const whatsAppUrl = buildCustomerWhatsAppUrl(order, res.locals.storeName);
+
+    res.render('orders/detail', {
+      title: `Order #${order.order_no}`,
+      order,
+      whatsAppUrl
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /orders/:orderNo/status
+ */
+router.post('/:orderNo/status', async (req, res) => {
+  const orderNo = req.params.orderNo.toUpperCase();
+  const { status, courier, awb, note, restock } = req.body;
+  const actor = req.user ? `${req.user.name} [${req.user.role}]` : 'Staff';
+
+  try {
+    await updateOrderStatus(orderNo, {
+      status,
+      courier,
+      awb,
+      note,
+      restock: restock !== 'false'
+    }, actor);
+
+    res.redirect(`/orders/${encodeURIComponent(orderNo)}?flash=${encodeURIComponent(`Order #${orderNo} transitioned to ${status}.`)}`);
+  } catch (err) {
+    res.redirect(`/orders/${encodeURIComponent(orderNo)}?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
+/**
+ * POST /orders/:orderNo/paid
+ */
+router.post('/:orderNo/paid', async (req, res) => {
+  const orderNo = req.params.orderNo.toUpperCase();
+  const { payment_ref } = req.body;
+  const actor = req.user ? `${req.user.name} [${req.user.role}]` : 'Staff';
+
+  try {
+    await markOrderPaid(orderNo, payment_ref, actor);
+    res.redirect(`/orders/${encodeURIComponent(orderNo)}?flash=${encodeURIComponent(`Payment marked PAID for Order #${orderNo}.`)}`);
+  } catch (err) {
+    res.redirect(`/orders/${encodeURIComponent(orderNo)}?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
+export default router;

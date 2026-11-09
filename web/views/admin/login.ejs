@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+
+  <title>Staff Login | <%= config.storeName %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="background-color: #14110F; color: #F6F1E9; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-md);">
+  <div style="width: 100%; max-width: 400px; background-color: #1E1B18; border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-xs); padding: var(--space-2xl); box-shadow: var(--shadow-modal);">
+    <div style="text-align: center; margin-bottom: var(--space-xl);">
+      <span class="eyebrow-label" style="color: var(--color-brass);">Atelier Administration</span>
+      <h1 class="font-serif" style="font-size: var(--text-xl); color: #FFFFFF; margin-top: 4px;">Staff Verification</h1>
+      <p style="font-size: var(--text-2xs); color: #A8A19B; margin-top: 4px;">Internal order management & stock tracking</p>
+    </div>
+
+    <% if (error) { %>
+      <div style="background-color: rgba(220, 53, 69, 0.2); border-left: 3px solid #ff6b6b; color: #ffc9c9; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-xs); margin-bottom: var(--space-md); font-size: var(--text-xs);">
+        <%= error %>
+      </div>
+    <% } %>
+
+    <form method="POST" action="/admin/login">
+      <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+
+      <div class="form-group">
+        <label for="password" class="form-label" style="color: #F6F1E9;">Master Administrator Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          class="form-input"
+          style="background-color: #12100E; border-color: rgba(255,255,255,0.2); color: #FFFFFF;"
+          placeholder="••••••••••••"
+          required
+          autofocus
+        />
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top: var(--space-md);">
+        Authenticate &rarr;
+      </button>
+    </form>
+
+    <div style="margin-top: var(--space-xl); text-align: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: var(--space-md);">
+      <a href="/" style="font-size: var(--text-2xs); color: var(--color-brass); text-decoration: none;">
+        &larr; Return to Public Storefront
+      </a>
+    </div>
+  </div>
+</body>
+</html>

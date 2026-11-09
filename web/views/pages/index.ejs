@@ -1,0 +1,189 @@
+<!-- Full Viewport Hero Section -->
+<section class="hero-section" aria-label="Hero Spotlight">
+  <div class="site-container hero-grid">
+    <div class="hero-content">
+      <span class="eyebrow-label"><%= site.hero.eyebrow %></span>
+
+      <h1 class="hero-headline">
+        <span><span class="hero-headline-line"><%= site.hero.titleLine1 %></span></span>
+        <span><span class="hero-headline-line" style="transition-delay: 0.15s;"><%= site.hero.titleLine2 %></span></span>
+      </h1>
+
+      <p class="hero-subtext">
+        <%= site.hero.subtitle %>
+      </p>
+
+      <div class="hero-actions">
+        <a href="<%= site.hero.ctaUrl %>" class="btn btn-primary">
+          <%= site.hero.ctaText %>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+
+        <a href="<%= site.hero.secondaryCtaUrl %>" class="btn btn-secondary">
+          <%= site.hero.secondaryCtaText %>
+        </a>
+      </div>
+    </div>
+
+    <!-- Hero Visual with subtle requestAnimationFrame Parallax -->
+    <div class="hero-visual">
+      <div class="hero-image-wrapper">
+        <img
+          src="<%= site.hero.heroImage %>"
+          alt="Aura & Thread Atelier Slow Craft Dress"
+          class="hero-image"
+          onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'product-placeholder\'><span class=\'placeholder-initials\'>AT</span><span class=\'placeholder-tag\'>Autumn / Winter 2026</span></div>';"
+        />
+        <div class="hero-badge-floating">
+          <span class="hero-badge-title">Slow Handloom Run</span>
+          <span class="hero-badge-sub">Limited to 50 silhouettes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Category Tiles Section (Derived dynamically from API data) -->
+<% if (categories && categories.length > 0) { %>
+<section class="site-container" style="padding-top: var(--space-3xl); padding-bottom: var(--space-2xl);" aria-label="Collections by Silhouette">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--space-xl);">
+    <div>
+      <span class="eyebrow-label">Curated Silhouettes</span>
+      <h2 class="section-title">Shop by Category</h2>
+    </div>
+    <a href="/shop" class="animated-link font-sans" style="font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-oxblood);">
+      View All &rarr;
+    </a>
+  </div>
+
+  <div class="category-tiles-grid">
+    <% categories.slice(0, 4).forEach((cat, idx) => { %>
+      <a href="/shop?category=<%= encodeURIComponent(cat) %>" class="category-tile reveal-on-scroll" style="--i: <%= idx %>;">
+        <div class="product-placeholder category-tile-bg">
+          <span class="placeholder-initials" style="font-size: 1.75rem;"><%= getInitials(cat) %></span>
+        </div>
+        <div class="category-tile-content">
+          <h3 class="category-tile-name"><%= cat %></h3>
+          <span class="category-tile-cta">Explore Silhouettes &rarr;</span>
+        </div>
+      </a>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
+<!-- New Arrivals (Fed Live from shop-api, in-stock first, max 8) -->
+<section class="site-container" style="padding-top: var(--space-2xl); padding-bottom: var(--space-3xl);" aria-label="New Arrivals">
+  <div style="text-align: center; max-width: 600px; margin: 0 auto var(--space-2xl) auto;">
+    <span class="eyebrow-label">Fresh Off the Loom</span>
+    <h2 class="section-title">New Arrivals</h2>
+    <p class="section-subtitle" style="margin: 0 auto;">
+      Small-batch pieces woven from organic unbleached Kora, Chanderi silk, and natural vat indigo.
+    </p>
+  </div>
+
+  <div class="product-grid">
+    <% if (newArrivals && newArrivals.length > 0) { %>
+      <% newArrivals.forEach((product, idx) => { %>
+        <%- include('../partials/product-card', { product, index: idx }) %>
+      <% }) %>
+    <% } else { %>
+      <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-3xl) 0; color: var(--color-text-muted);">
+        <p class="font-serif" style="font-size: var(--text-lg);">Our artisans are currently finishing the upcoming collection.</p>
+        <p style="font-size: var(--text-sm); margin-top: 8px;">Please check back shortly or visit our atelier.</p>
+      </div>
+    <% } %>
+  </div>
+
+  <div style="text-align: center; margin-top: var(--space-2xl);">
+    <a href="/shop" class="btn btn-secondary">
+      View Entire Catalog (<%= newArrivals ? newArrivals.length : 0 %> Available)
+    </a>
+  </div>
+</section>
+
+<!-- Brand Story Strip on Dark Band (High Contrast Editorial Section) -->
+<section class="dark-band" aria-label="Brand Philosophy">
+  <div class="site-container dark-band-grid">
+    <div>
+      <span class="eyebrow-label" style="color: var(--color-brass);"><%= site.storyBand.eyebrow %></span>
+      <h2 class="dark-band-headline">
+        <%= site.storyBand.headline %>
+      </h2>
+      <p class="dark-band-body">
+        <%= site.storyBand.body %>
+      </p>
+      <div class="dark-band-quote-meta">
+        <div class="dark-band-author"><%= site.storyBand.quoteAuthor %></div>
+        <div class="dark-band-role"><%= site.storyBand.quoteRole %></div>
+      </div>
+    </div>
+
+    <div style="background-color: var(--color-dark-band-card); border: 1px solid var(--color-border-dark); padding: var(--space-2xl); border-radius: var(--radius-xs);">
+      <h3 class="font-serif" style="font-size: var(--text-lg); margin-bottom: var(--space-md); color: #FFFFFF;">
+        Our Artisan Guarantee
+      </h3>
+      <ul style="list-style: none; display: flex; flex-direction: column; gap: var(--space-md);">
+        <li style="display: flex; gap: var(--space-sm); align-items: flex-start;">
+          <span style="color: var(--color-brass); font-size: 1.1rem; line-height: 1;">✓</span>
+          <span style="font-size: var(--text-sm); color: var(--color-dark-band-muted);">
+            <strong style="color: #FFFFFF;">Direct Weaver Honoraria:</strong> 40% above fair-trade standard rates paid straight to artisan guilds.
+          </span>
+        </li>
+        <li style="display: flex; gap: var(--space-sm); align-items: flex-start;">
+          <span style="color: var(--color-brass); font-size: 1.1rem; line-height: 1;">✓</span>
+          <span style="font-size: var(--text-sm); color: var(--color-dark-band-muted);">
+            <strong style="color: #FFFFFF;">Single-Needle Tailoring:</strong> French seams, generous pockets, and hand-bound hems.
+          </span>
+        </li>
+        <li style="display: flex; gap: var(--space-sm); align-items: flex-start;">
+          <span style="color: var(--color-brass); font-size: 1.1rem; line-height: 1;">✓</span>
+          <span style="font-size: var(--text-sm); color: var(--color-dark-band-muted);">
+            <strong style="color: #FFFFFF;">Zero Landfill Run:</strong> Capped batches of 20 to 50 numbered pieces.
+          </span>
+        </li>
+      </ul>
+      <div style="margin-top: var(--space-xl);">
+        <a href="/about" class="btn btn-dark btn-sm">Read Our Full Story</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Personal Styling Call To Action (WhatsApp & Instagram) -->
+<section class="site-container" style="padding-top: var(--space-3xl); padding-bottom: var(--space-3xl);" aria-label="Bespoke Inquiries">
+  <div style="background-color: var(--color-surface); border: 1px solid var(--color-border); padding: var(--space-2xl); border-radius: var(--radius-xs); text-align: center; max-width: 840px; margin: 0 auto; box-shadow: var(--shadow-subtle);">
+    <span class="eyebrow-label eyebrow-label-oxblood">Atelier Styling Service</span>
+    <h2 class="section-title" style="margin-bottom: var(--space-sm);"><%= site.ctaSection.headline %></h2>
+    <p class="section-subtitle" style="margin: 0 auto var(--space-xl) auto;">
+      <%= site.ctaSection.subtext %>
+    </p>
+
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-md);">
+      <a href="https://wa.me/<%= config.whatsappNumber %>?text=<%= encodeURIComponent('Hello ' + storeName + '! I am looking for personal styling assistance for an upcoming occasion.') %>"
+         target="_blank"
+         rel="noopener noreferrer"
+         class="btn btn-whatsapp">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        <%= site.ctaSection.whatsappButton %>
+      </a>
+
+      <a href="https://instagram.com/<%= config.instagramHandle %>"
+         target="_blank"
+         rel="noopener noreferrer"
+         class="btn btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+          <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+        </svg>
+        <%= site.ctaSection.instagramButton %>
+      </a>
+    </div>
+  </div>
+</section>

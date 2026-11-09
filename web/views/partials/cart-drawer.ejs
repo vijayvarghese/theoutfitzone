@@ -1,0 +1,47 @@
+<!-- Slide-in Cart Drawer Backdrop -->
+<div id="cart-drawer-backdrop" class="drawer-backdrop" aria-hidden="true">
+  <aside class="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping Bag">
+    <div class="drawer-header">
+      <h2 class="drawer-title font-serif">Your Shopping Bag</h2>
+      <button type="button" class="drawer-close-btn cart-close-trigger" aria-label="Close bag drawer">&times;</button>
+    </div>
+
+    <!-- Live Drawer Items Body -->
+    <div class="drawer-body">
+      <div class="drawer-empty-state">
+        <p class="font-serif" style="font-size: 1.25rem; margin-bottom: 8px;">Your bag is currently empty.</p>
+        <p style="font-size: 0.85rem; margin-bottom: 20px;">Explore our handcrafted silhouettes and discover your perfect fit.</p>
+        <a href="/shop" class="btn btn-secondary btn-sm cart-close-trigger">Explore Collection</a>
+      </div>
+    </div>
+
+    <!-- Sticky Drawer Footer -->
+    <div class="drawer-footer" style="display: none;">
+      <div class="drawer-shipping-notice">
+        Complimentary domestic delivery on orders over <%= formatInr(config.freeShippingAbove) %>
+      </div>
+
+      <div class="drawer-row">
+        <span>Subtotal</span>
+        <span class="drawer-subtotal-val">₹0</span>
+      </div>
+
+      <div class="drawer-row">
+        <span>Estimated Shipping</span>
+        <span class="drawer-shipping-val"><%= formatInr(config.shippingFlat) %></span>
+      </div>
+
+      <div class="drawer-row drawer-row-total">
+        <span>Total (INR)</span>
+        <span class="drawer-total-val">₹0</span>
+      </div>
+
+      <a href="/checkout" class="btn btn-primary btn-block" style="margin-top: 8px;">
+        Proceed to Checkout
+      </a>
+      <a href="/cart" class="btn btn-secondary btn-sm btn-block cart-close-trigger" style="text-align: center;">
+        View Full Bag
+      </a>
+    </div>
+  </aside>
+</div>

@@ -1,0 +1,114 @@
+<!-- Filter Toolbar -->
+<div class="filter-toolbar">
+  <form method="GET" action="/movements" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; width: 100%;">
+    <div class="search-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" name="sku" value="<%= filters.sku %>" placeholder="Filter by SKU..." autocomplete="off">
+    </div>
+
+    <select name="reason" class="form-select" onchange="this.form.submit()">
+      <option value="all">All Movement Reasons</option>
+      <option value="restock" <%= filters.reason === 'restock' ? 'selected' : '' %>>Restock Events</option>
+      <option value="audit" <%= filters.reason === 'audit' ? 'selected' : '' %>>Physical Audits</option>
+      <option value="initial" <%= filters.reason === 'initial' ? 'selected' : '' %>>Initial Setup</option>
+      <option value="edit" <%= filters.reason === 'edit' ? 'selected' : '' %>>Edits</option>
+    </select>
+
+    <select name="direction" class="form-select" onchange="this.form.submit()">
+      <option value="all" <%= filters.direction === 'all' ? 'selected' : '' %>>All Directions</option>
+      <option value="positive" <%= filters.direction === 'positive' ? 'selected' : '' %>>Additions (+ Delta)</option>
+      <option value="negative" <%= filters.direction === 'negative' ? 'selected' : '' %>>Deductions (- Delta)</option>
+    </select>
+
+    <div style="margin-left: auto; display: flex; gap: 8px;">
+      <a href="/movements" class="btn btn-secondary btn-sm" title="Clear Filters">Reset</a>
+      <a href="/movements/export.csv" class="btn btn-secondary btn-sm" title="Export CSV for spreadsheet reporting">
+        📥 Export CSV
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Movements Table -->
+<div class="card">
+  <div class="card-header">
+    <div style="font-weight: 600; font-size: 14px;">
+      Audit Trail: <strong><%= totalCount %></strong> total inventory transactions recorded
+    </div>
+    <div style="font-size: 12px; color: var(--text-muted);">
+      Trigger-enforced database audit log. Cannot be tampered with.
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="portal-table">
+      <thead>
+        <tr>
+          <th style="width: 170px;">Timestamp</th>
+          <th>Silhouette & Category</th>
+          <th style="width: 140px;">SKU</th>
+          <th style="width: 90px;">Size</th>
+          <th style="width: 100px;">Colour</th>
+          <th style="width: 100px; text-align: center;">Stock Delta</th>
+          <th style="width: 100px; text-align: center;">Qty After</th>
+          <th>Movement Reason / Reference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!movements.length) { %>
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              No movements found matching the current filter.
+            </td>
+          </tr>
+        <% } %>
+
+        <% movements.forEach(m => { %>
+          <tr>
+            <td style="font-size: 12px; color: var(--text-muted);">
+              <%= formatDate(m.at) %>
+            </td>
+            <td>
+              <div style="font-weight: 600; font-size: 13.5px;"><%= m.product_name %></div>
+              <div style="font-size: 11px; color: var(--text-muted);"><%= m.category || 'Uncategorized' %></div>
+            </td>
+            <td><span class="sku-tag"><%= m.sku %></span></td>
+            <td><%= m.size || '-' %></td>
+            <td><%= m.colour || '-' %></td>
+            <td style="text-align: center;">
+              <span class="badge <%= m.delta > 0 ? 'badge-success' : (m.delta < 0 ? 'badge-danger' : 'badge-neutral') %>" style="font-size: 12px;">
+                <%= m.delta > 0 ? '+' : '' %><%= m.delta %>
+              </span>
+            </td>
+            <td style="text-align: center; font-weight: 700; font-size: 14px;">
+              <%= m.qty_after %>
+            </td>
+            <td>
+              <div style="font-weight: 500; font-size: 13px; color: var(--text-main);"><%= m.reason %></div>
+              <% if (m.ref) { %>
+                <div style="font-size: 11px; color: var(--text-muted);">Ref: <%= m.ref %></div>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <% if (totalPages > 1) { %>
+    <div class="card-header" style="justify-content: space-between;">
+      <div style="font-size: 12px; color: var(--text-muted);">
+        Page <%= page %> of <%= totalPages %> (<%= totalCount %> records)
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <% if (page > 1) { %>
+          <a href="/movements?page=<%= page - 1 %>&sku=<%= filters.sku %>&reason=<%= filters.reason %>&direction=<%= filters.direction %>" class="btn btn-secondary btn-xs">&larr; Previous</a>
+        <% } %>
+        <% if (page < totalPages) { %>
+          <a href="/movements?page=<%= page + 1 %>&sku=<%= filters.sku %>&reason=<%= filters.reason %>&direction=<%= filters.direction %>" class="btn btn-secondary btn-xs">Next &rarr;</a>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>

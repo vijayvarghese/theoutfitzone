@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title><%= typeof title !== 'undefined' ? title : 'Inventory Portal' %> | <%= storeName %></title>
+  <link rel="stylesheet" href="/static/css/staff.css?v=<%= Date.now() %>">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <span class="brand-badge">HQ</span>
+        <div>
+          <div class="brand-title"><%= storeName %></div>
+          <div class="brand-sub">Store Inventory System</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Operations</div>
+        <a href="/" class="nav-link <%= currentPath === '/' ? 'active' : '' %>">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Dashboard</span>
+        </a>
+
+        <% if (typeof canManageOrders !== 'undefined' && canManageOrders) { %>
+          <a href="/orders" class="nav-link <%= currentPath.startsWith('/orders') ? 'active' : '' %>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="3" width="15" height="13"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+            <span>Customer Orders</span>
+          </a>
+        <% } %>
+
+        <a href="/products" class="nav-link <%= currentPath.startsWith('/products') ? 'active' : '' %>">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span>Silhouettes & Catalog</span>
+        </a>
+
+        <a href="/stock" class="nav-link <%= currentPath === '/stock' ? 'active' : '' %>">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+          <span>Variant Inventory</span>
+        </a>
+
+        <% if (typeof canModifyStock !== 'undefined' && canModifyStock) { %>
+          <a href="/stock/bulk" class="nav-link <%= currentPath === '/stock/bulk' ? 'active' : '' %>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <span>Bulk Shelf Count</span>
+          </a>
+        <% } %>
+
+        <div class="nav-section-label">Audit & Media</div>
+        <a href="/movements" class="nav-link <%= currentPath.startsWith('/movements') ? 'active' : '' %>">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span>Movement History</span>
+        </a>
+
+        <div class="nav-section-label">External Services</div>
+        <a href="http://localhost:8081" target="_blank" class="nav-link" style="color: #60A5FA;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          <span>Main Storefront ↗</span>
+        </a>
+
+        <a href="http://localhost:8083/healthz" target="_blank" class="nav-link" style="color: #34D399;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+          <span>Nginx Media Server (8083)</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+        <% if (typeof user !== 'undefined' && user) { %>
+          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 700; color: #FFFFFF; font-size: 13px;"><%= user.badge %></div>
+              <div style="font-size: 11px; color: #9CA3AF;"><%= user.name %></div>
+            </div>
+            <form method="POST" action="/logout" style="margin: 0;">
+              <button type="submit" title="Sign out" style="background: none; border: none; color: #9CA3AF; cursor: pointer; padding: 4px; font-size: 11px;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='#9CA3AF'">
+                Logout ↗
+              </button>
+            </form>
+          </div>
+        <% } %>
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-top: 1px solid #1F2937; padding-top: 6px; font-size: 11px;">
+          <span>Postgres Connected</span>
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10B981;"></span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="app-main">
+      <header class="topbar">
+        <h1 class="topbar-title">
+          <%= typeof title !== 'undefined' ? title : 'Inventory Management' %>
+        </h1>
+
+        <div class="topbar-actions">
+          <% if (typeof canManageCatalog !== 'undefined' && canManageCatalog) { %>
+            <a href="/products/new" class="btn btn-primary btn-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Add Silhouette</span>
+            </a>
+          <% } %>
+          <% if (typeof canModifyStock !== 'undefined' && canModifyStock) { %>
+            <button type="button" class="btn btn-secondary btn-sm" data-modal-target="modal-add-variant">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Add Variant SKU</span>
+            </button>
+          <% } %>
+          <% if (typeof user !== 'undefined' && user) { %>
+            <div class="badge" style="background: #F3F4F6; color: #1F2937; padding: 6px 12px; font-weight: 600;">
+              <%= user.badge %>
+            </div>
+          <% } %>
+        </div>
+      </header>
+
+      <main class="content-body">
+        <% if (flash) { %>
+          <div class="alert alert-success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span><%= flash %></span>
+          </div>
+        <% } %>
+
+        <% if (error) { %>
+          <div class="alert alert-error">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span><%= error %></span>
+          </div>
+        <% } %>
+
+        <%- body %>
+      </main>
+    </div>
+  </div>
+
+  <!-- Universal Modal: Stock Audit Adjustment -->
+  <div class="modal-overlay" id="modal-stock-adjust">
+    <div class="modal-content">
+      <form method="POST" action="/stock/adjust">
+        <input type="hidden" name="variant_id" value="">
+        <div class="modal-header">
+          <h2 class="modal-title">Inventory Stock Adjustment</h2>
+          <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="background: #F9FAFB; padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid var(--border-color);">
+            <div style="font-weight: 600; font-size: 14px; color: var(--text-main);" id="modal-adjust-product">-</div>
+            <div style="display: flex; gap: 12px; margin-top: 4px; font-size: 12px; color: var(--text-muted);">
+              <span>SKU: <strong id="modal-adjust-sku" class="sku-tag">-</strong></span>
+              <span>On Hand: <strong id="modal-adjust-onhand" style="color: var(--text-main);">-</strong></span>
+              <span>Reserved: <strong id="modal-adjust-reserved" style="color: var(--warning-text);">-</strong></span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Adjustment Mode</label>
+            <div style="display: flex; gap: 16px;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+                <input type="radio" name="mode" value="delta" checked>
+                <span>Relative Delta (+ / -)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+                <input type="radio" name="mode" value="exact">
+                <span>Exact Physical Count</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Quantity Value</label>
+            <input type="number" name="value" class="form-input" style="width: 100%;" placeholder="e.g. +10, -2, or exact 35" required>
+            <div class="form-hint">For Delta: use positive numbers to add stock, negative to deduct. For Exact: enter verified shelf count.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Audit Reason (Required)</label>
+            <select name="reason" class="form-select" style="width: 100%;" required>
+              <option value="Physical Audit / Stock Count">Physical Audit / Shelf Stock Count</option>
+              <option value="Supplier Delivery / Inbound Restock">Supplier Delivery / Inbound Restock</option>
+              <option value="Damaged / Defective Stock Discarded">Damaged / Defective Stock Discarded</option>
+              <option value="In-Store Customer Purchase (Direct)">In-Store Customer Purchase (Direct)</option>
+              <option value="Store Display / Sample Allocation">Store Display / Sample Allocation</option>
+              <option value="Return / Restock Intake">Return / Restock Intake</option>
+              <option value="Inventory Correction">General Inventory Correction</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Staff Notes / Ref (Optional)</label>
+            <input type="text" name="notes" class="form-input" style="width: 100%;" placeholder="e.g. Rack B3 count by Meera">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Adjustment &rarr;</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Universal Modal: Fast Image Upload -->
+  <div class="modal-overlay" id="modal-upload-image">
+    <div class="modal-content">
+      <form method="POST" action="" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h2 class="modal-title">Upload Silhouette Image</h2>
+          <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Target Silhouette: <strong id="modal-image-product-name" style="color: var(--text-main);">-</strong>
+          </p>
+
+          <div class="dropzone" id="fast-image-dropzone">
+            <input type="file" name="image" accept="image/png, image/jpeg, image/webp, image/svg+xml, image/avif" required>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" style="margin: 0 auto 8px auto; display: block;">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <div style="font-weight: 600; font-size: 13.5px; color: var(--text-main);">Click or drag image photo here</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">PNG, JPG, WebP, or SVG up to 8MB. Served via Nginx to main website collection tiles.</div>
+
+            <div class="dropzone-preview" style="display: none;">
+              <img class="preview-img" src="" alt="Preview">
+              <div style="text-align: left;">
+                <div class="preview-name" style="font-weight: 600; font-size: 12px;"></div>
+                <div style="font-size: 11px; color: var(--success-text);">Ready to save and serve via Nginx</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Upload & Publish &rarr;</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Universal Modal: Edit Variant Details -->
+  <div class="modal-overlay" id="modal-edit-variant">
+    <div class="modal-content">
+      <form method="POST" action="">
+        <div class="modal-header">
+          <h2 class="modal-title">Edit Variant Specifications</h2>
+          <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">SKU</label>
+            <input type="text" name="sku" class="form-input" style="width: 100%; font-family: var(--font-mono); text-transform: uppercase;" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Size</label>
+              <input type="text" name="size" class="form-input" style="width: 100%;" placeholder="e.g. XS, M, L">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Colour</label>
+              <input type="text" name="colour" class="form-input" style="width: 100%;" placeholder="e.g. Ivory">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reorder Level Threshold</label>
+            <input type="number" name="reorder_level" class="form-input" style="width: 100%;" min="0" required>
+            <div class="form-hint">Staff alerts trigger when available stock drops to or below this number.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Specifications</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/staff.js?v=<%= Date.now() %>"></script>
+</body>
+</html>

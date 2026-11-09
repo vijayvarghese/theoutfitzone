@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <meta name="theme-color" content="#F6F1E9">
+
+  <title><%= typeof title !== 'undefined' ? title : (storeName + ' | ' + storeTagline) %></title>
+  <meta name="description" content="<%= typeof metaDesc !== 'undefined' ? metaDesc : storeTagline %>">
+
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:site_name" content="<%= storeName %>">
+  <meta property="og:title" content="<%= typeof title !== 'undefined' ? title : storeName %>">
+  <meta property="og:description" content="<%= typeof metaDesc !== 'undefined' ? metaDesc : storeTagline %>">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="<%= config.siteUrl %><%= currentPath %>">
+  <meta property="og:locale" content="en_IN">
+
+  <!-- Self-Hosted Assets -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+</head>
+<body>
+  <!-- Accessibility Skip Link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Header -->
+  <%- include('partials/header') %>
+
+  <!-- Main Content -->
+  <main id="main-content" class="site-main">
+    <%- body %>
+  </main>
+
+  <!-- Footer -->
+  <%- include('partials/footer') %>
+
+  <!-- Slide-in Cart Drawer -->
+  <%- include('partials/cart-drawer') %>
+
+  <!-- Progressive Quick View Modal -->
+  <%- include('partials/quick-view-modal') %>
+
+  <!-- Vanilla Client ES Modules (No build step, no bundler) -->
+  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/quickview.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+
+  <title><%= typeof title !== 'undefined' ? title : 'Atelier Back-Office' %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+</head>
+<body class="admin-shell">
+  <!-- Admin Top Navigation Bar -->
+  <header class="admin-header">
+    <div class="site-container" style="display: flex; justify-content: space-between; align-items: center; height: 56px;">
+      <div style="display: flex; align-items: center; gap: var(--space-lg);">
+        <a href="/admin/orders" style="font-family: var(--font-serif); font-size: 1.15rem; font-weight: 600; color: #FFFFFF; display: flex; align-items: center; gap: 8px;">
+          <span><%= config.storeName %></span>
+          <span style="font-size: 0.65rem; background: var(--color-oxblood); color: #FFF; padding: 2px 6px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.08em;">Staff Portal</span>
+        </a>
+
+        <% if (typeof config !== 'undefined' && typeof flashNotice !== 'undefined' || currentPath.startsWith('/admin')) { %>
+          <nav style="display: flex; gap: var(--space-xs);">
+            <a href="/admin/orders" class="admin-nav-link <%= currentPath.startsWith('/admin/orders') ? 'active' : '' %>">Orders</a>
+            <a href="/admin/stock" class="admin-nav-link <%= currentPath.startsWith('/admin/stock') ? 'active' : '' %>">Stock & Inventory</a>
+            <a href="/" target="_blank" class="admin-nav-link" style="color: var(--color-brass);">View Storefront ↗</a>
+          </nav>
+        <% } %>
+      </div>
+
+      <div>
+        <form method="POST" action="/admin/logout">
+          <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+          <button type="submit" style="font-size: var(--text-2xs); color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 2px;">
+            Logout
+          </button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash feedback notices -->
+  <div class="site-container" style="margin-top: var(--space-md);">
+    <% if (typeof flashNotice !== 'undefined' && flashNotice) { %>
+      <div style="background-color: var(--color-status-success-bg); border-left: 4px solid var(--color-status-success); color: var(--color-status-success); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-xs); margin-bottom: var(--space-md); font-size: var(--text-xs); font-weight: 500;">
+        <%= flashNotice %>
+      </div>
+    <% } %>
+
+    <% if (typeof flashError !== 'undefined' && flashError) { %>
+      <div style="background-color: var(--color-status-error-bg); border-left: 4px solid var(--color-status-error); color: var(--color-status-error); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-xs); margin-bottom: var(--space-md); font-size: var(--text-xs); font-weight: 500;">
+        <%= flashError %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Admin View Body -->
+  <main class="site-container" style="padding-top: var(--space-md); padding-bottom: var(--space-3xl);">
+    <%- body %>
+  </main>
+
+  <script type="module" src="/js/admin.js?v=<%= Date.now() %>"></script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+<% if (typeof canManageOrders !== 'undefined' && canManageOrders && typeof orderMetrics !== 'undefined' && orderMetrics) { %>
+  <!-- Orders & Fulfillment Operational Queue -->
+  <div class="card" style="margin-bottom: 24px; padding: 20px; background: #FFFFFF; border-left: 4px solid #4F46E5;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #4F46E5; letter-spacing: 0.05em;">Order Fulfillment Operations</div>
+        <h2 style="font-size: 17px; font-weight: 700; color: #111827; margin: 2px 0 0 0;">Customer Queue & Workflow</h2>
+      </div>
+      <a href="/orders" class="btn btn-primary btn-sm">
+        Go to Orders Queue (<%= orderMetrics.totalOrders %>) &rarr;
+      </a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+      <a href="/orders?status=PENDING_PAYMENT" style="text-decoration: none; display: block; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 12px;">
+        <div style="font-size: 11px; color: #92400E; font-weight: 600; text-transform: uppercase;">To Verify / Pay</div>
+        <div style="font-size: 22px; font-weight: 800; color: #B45309; margin: 4px 0;"><%= orderMetrics.pendingPayment %></div>
+        <div style="font-size: 11px; color: #92400E;">Pending UTR</div>
+      </a>
+
+      <a href="/orders?status=CONFIRMED" style="text-decoration: none; display: block; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 6px; padding: 12px;">
+        <div style="font-size: 11px; color: #1E40AF; font-weight: 600; text-transform: uppercase;">To Pack</div>
+        <div style="font-size: 22px; font-weight: 800; color: #1D4ED8; margin: 4px 0;"><%= orderMetrics.toPack %></div>
+        <div style="font-size: 11px; color: #1E40AF;">Awaiting pack</div>
+      </a>
+
+      <a href="/orders?status=PACKED" style="text-decoration: none; display: block; background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 6px; padding: 12px;">
+        <div style="font-size: 11px; color: #6B21A8; font-weight: 600; text-transform: uppercase;">To Dispatch</div>
+        <div style="font-size: 22px; font-weight: 800; color: #7E22CE; margin: 4px 0;"><%= orderMetrics.toShip %></div>
+        <div style="font-size: 11px; color: #6B21A8;">Ready for courier</div>
+      </a>
+
+      <a href="/orders?status=SHIPPED" style="text-decoration: none; display: block; background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 6px; padding: 12px;">
+        <div style="font-size: 11px; color: #3730A3; font-weight: 600; text-transform: uppercase;">In Transit</div>
+        <div style="font-size: 22px; font-weight: 800; color: #4338CA; margin: 4px 0;"><%= orderMetrics.inTransit %></div>
+        <div style="font-size: 11px; color: #3730A3;">With courier</div>
+      </a>
+
+      <a href="/orders?status=DELIVERED" style="text-decoration: none; display: block; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 6px; padding: 12px;">
+        <div style="font-size: 11px; color: #065F46; font-weight: 600; text-transform: uppercase;">Delivered</div>
+        <div style="font-size: 22px; font-weight: 800; color: #047857; margin: 4px 0;"><%= orderMetrics.delivered %></div>
+        <div style="font-size: 11px; color: #065F46;">Completed</div>
+      </a>
+    </div>
+  </div>
+<% } %>
+
+<!-- KPI Statistics Row -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Silhouettes</div>
+      <div class="kpi-value"><%= kpis.total_products || 0 %></div>
+      <div class="kpi-sub"><%= kpis.total_variants || 0 %> active variant SKUs</div>
+    </div>
+    <div class="kpi-icon indigo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Available Stock</div>
+      <div class="kpi-value" style="color: var(--success);"><%= kpis.total_available || 0 %></div>
+      <div class="kpi-sub">On Hand: <%= kpis.total_on_hand || 0 %> | Res: <%= kpis.total_reserved || 0 %></div>
+    </div>
+    <div class="kpi-icon emerald">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Low Stock Warnings</div>
+      <div class="kpi-value" style="color: var(--warning-text);"><%= kpis.low_stock_count || 0 %></div>
+      <div class="kpi-sub"><%= kpis.out_of_stock_count || 0 %> SKUs completely sold out</div>
+    </div>
+    <div class="kpi-icon amber">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Catalog Valuation</div>
+      <div class="kpi-value"><%= formatInr(kpis.total_valuation || 0) %></div>
+      <div class="kpi-sub">Physical wholesale inventory value</div>
+    </div>
+    <div class="kpi-icon rose">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+    </div>
+  </div>
+</div>
+
+<!-- Main 2-Column Split -->
+<div style="display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 24px; align-items: start;">
+  <!-- Left: Low Stock Action Center -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Low Stock Alert Center</h2>
+        <div style="font-size: 12px; color: var(--text-muted);">Variants at or below reorder threshold requiring workshop replenishment</div>
+      </div>
+      <a href="/stock?stock_status=low" class="btn btn-secondary btn-xs">View All Low Stock &rarr;</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="portal-table">
+        <thead>
+          <tr>
+            <th>Silhouette</th>
+            <th>SKU / Size</th>
+            <th>On Hand</th>
+            <th>Reserved</th>
+            <th>Available</th>
+            <th>Reorder</th>
+            <th>Quick Restock</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!lowStockItems.length) { %>
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                <div style="font-weight: 600; color: var(--success);">All Variant Stock Healthy</div>
+                <div style="font-size: 12px; margin-top: 4px;">No variants currently below their reorder threshold.</div>
+              </td>
+            </tr>
+          <% } %>
+
+          <% lowStockItems.forEach(item => { %>
+            <tr>
+              <td>
+                <div style="font-weight: 600; color: var(--text-main);"><%= item.product_name %></div>
+                <div style="font-size: 11px; color: var(--text-muted);"><%= item.category || 'Uncategorized' %></div>
+              </td>
+              <td>
+                <span class="sku-tag"><%= item.sku %></span>
+                <span style="font-size: 11px; color: var(--text-muted); margin-left: 4px;"><%= item.size || '-' %></span>
+              </td>
+              <td><%= item.on_hand %></td>
+              <td><%= item.reserved %></td>
+              <td>
+                <span class="badge <%= item.available <= 0 ? 'badge-danger' : 'badge-warning' %>">
+                  <%= item.available %> left
+                </span>
+              </td>
+              <td><%= item.reorder_level %></td>
+              <td>
+                <div style="display: flex; gap: 4px;">
+                  <form method="POST" action="/stock/quick-adjust" style="display: inline;">
+                    <input type="hidden" name="variant_id" value="<%= item.variant_id %>">
+                    <input type="hidden" name="delta" value="5">
+                    <input type="hidden" name="reason" value="Quick restock (+5) from Alert Center">
+                    <button type="submit" class="btn btn-secondary btn-xs">+5</button>
+                  </form>
+                  <form method="POST" action="/stock/quick-adjust" style="display: inline;">
+                    <input type="hidden" name="variant_id" value="<%= item.variant_id %>">
+                    <input type="hidden" name="delta" value="10">
+                    <input type="hidden" name="reason" value="Quick restock (+10) from Alert Center">
+                    <button type="submit" class="btn btn-secondary btn-xs">+10</button>
+                  </form>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-xs btn-open-adjust-modal"
+                    data-variant-id="<%= item.variant_id %>"
+                    data-sku="<%= item.sku %>"
+                    data-product-name="<%= item.product_name %>"
+                    data-on-hand="<%= item.on_hand %>"
+                    data-reserved="<%= item.reserved %>"
+                  >
+                    Adjust...
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Right Column: Recent Movement Activity & Categories -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    <!-- Recent Stock Movements -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Recent Movement Feed</h2>
+        <a href="/movements" class="btn btn-secondary btn-xs">Full Log &rarr;</a>
+      </div>
+      <div style="padding: 12px 16px;">
+        <% if (!recentMovements.length) { %>
+          <div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">
+            No stock movements recorded yet.
+          </div>
+        <% } %>
+
+        <% recentMovements.forEach(m => { %>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+            <div>
+              <div style="font-weight: 600; font-size: 13px;">
+                <span class="sku-tag"><%= m.sku %></span>
+                <span style="color: var(--text-muted); font-size: 12px; margin-left: 6px;"><%= m.product_name %></span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                <%= m.reason %> &bull; <%= formatDate(m.at) %>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <span class="badge <%= m.delta > 0 ? 'badge-success' : 'badge-danger' %>">
+                <%= m.delta > 0 ? '+' : '' %><%= m.delta %>
+              </span>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">After: <strong><%= m.qty_after %></strong></div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Category Breakdown Summary -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Category Stock Distribution</h2>
+      </div>
+      <div style="padding: 16px;">
+        <% categories.forEach(cat => { %>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div>
+              <div style="font-weight: 600; font-size: 13px;"><%= cat.category %></div>
+              <div style="font-size: 11px; color: var(--text-muted);"><%= cat.product_count %> silhouettes &bull; <%= cat.variant_count %> SKUs</div>
+            </div>
+            <div style="text-align: right;">
+              <span class="badge badge-primary"><%= cat.available_pieces %> in stock</span>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add New Variant SKU -->
+<div class="modal-overlay" id="modal-add-variant">
+  <div class="modal-content">
+    <form method="POST" action="/stock/variants">
+      <div class="modal-header">
+        <h2 class="modal-title">Add Variant SKU to Silhouette</h2>
+        <button type="button" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Parent Silhouette / Product</label>
+          <select name="product_id" class="form-select" style="width: 100%;" required>
+            <option value="">-- Choose Silhouette --</option>
+            <% (products || []).forEach(p => { %>
+              <option value="<%= p.id %>">#<%= p.id %> - <%= p.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Variant SKU (Unique)</label>
+          <input type="text" name="sku" class="form-input" style="width: 100%; font-family: var(--font-mono); text-transform: uppercase;" placeholder="e.g. MSK-IVR-XXL" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Size</label>
+            <input type="text" name="size" class="form-input" style="width: 100%;" placeholder="e.g. S, M, L, Free Size">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Colour</label>
+            <input type="text" name="colour" class="form-input" style="width: 100%;" placeholder="e.g. Ivory, Sage Green">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Initial Physical On-Hand</label>
+            <input type="number" name="on_hand" class="form-input" style="width: 100%;" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reorder Level Threshold</label>
+            <input type="number" name="reorder_level" class="form-input" style="width: 100%;" value="2" min="0">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Variant &rarr;</button>
+      </div>
+    </form>
+  </div>
+</div>

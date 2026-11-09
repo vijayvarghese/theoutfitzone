@@ -1,0 +1,109 @@
+{
+  "brand": {
+    "name": "Aura & Thread Atelier",
+    "shortName": "Aura & Thread",
+    "tagline": "Handcrafted Indian silhouettes woven for graceful modern living.",
+    "curatorNote": "Curated in small batches by independent master artisans across India.",
+    "currencySymbol": "₹",
+    "shippingNote": "Complimentary domestic shipping on all orders over ₹2,500"
+  },
+  "hero": {
+    "eyebrow": "Autumn / Winter 2026 Collection",
+    "titleLine1": "Silhouettes cut from stillness,",
+    "titleLine2": "woven for everyday grace.",
+    "subtitle": "Mindfully tailored dresses, handcrafted kurtas, and artisanal overlay jackets shaped from indigenous handloom cottons and mulberry silks.",
+    "ctaText": "Shop the Collection",
+    "ctaUrl": "/shop",
+    "secondaryCtaText": "Our Story",
+    "secondaryCtaUrl": "/about",
+    "heroImage": "/products/hero-atelier.jpg"
+  },
+  "storyBand": {
+    "eyebrow": "Slow Fashion Manifesto",
+    "headline": "We believe clothing should breathe, soften with time, and carry the dignity of human hands.",
+    "body": "Every seam in our studio begins with unhurried dialogue between master weavers, natural dyers, and pattern cutters. We produce in intentional, limited runs of twenty to fifty pieces per silhouette—preventing landfill surplus and keeping your wardrobe distinctly personal.",
+    "quoteAuthor": "Ananya Sharma",
+    "quoteRole": "Founder & Creative Director"
+  },
+  "ctaSection": {
+    "headline": "Personal styling & bespoke inquiries",
+    "subtext": "Need help with sizing, fabric care, or custom length requests? Speak directly with our styling studio on WhatsApp or follow our daily atelier journals on Instagram.",
+    "whatsappButton": "Message on WhatsApp",
+    "instagramButton": "Follow on Instagram"
+  },
+  "about": {
+    "heroEyebrow": "Our Heritage & Philosophy",
+    "title": "A return to unhurried sartorial craftsmanship.",
+    "lead": "Founded in 2021 as a quiet rebellion against mass-produced synthetic clothing, Aura & Thread Atelier is a slow fashion sanctuary honoring natural textile traditions.",
+    "storyParagraphs": [
+      "Our story started in the handloom clusters of Maheshwar, Bengal, and Chanderi. Watching generational weavers turn raw organic threads into ethereal textiles made one truth undeniable: the most luxurious garments in the world are not fabricated by machines in cold factories, but by people who weave poetry into every weft.",
+      "Today, our small design studio works directly with over thirty weaving families and independent tailoring units. We eliminate intermediaries to ensure weavers receive honest living wages, while our patrons receive pieces cut from textiles you simply cannot find on high street racks."
+    ],
+    "values": [
+      {
+        "title": "Single-Batch Integrity",
+        "description": "We never mass-manufacture. Each silhouette is produced in batches capped at fifty pieces, numbered and never re-issued once fabric runs end."
+      },
+      {
+        "title": "Natural Fiber Purity",
+        "description": "100% GOTS-certified handspun cotton, Chanderi silk-cotton, and Mulberry silk. Biodegradable, skin-kind, and made to breathe in warm climates."
+      },
+      {
+        "title": "Fair Artisan Honoraria",
+        "description": "We pay 40% above fair-trade standard rates directly to our artisan guilds, supporting artisanal craft preservation across generational communities."
+      },
+      {
+        "title": "Zero-Waste Patterning",
+        "description": "Off-cuts and fabric remnants are transformed into matching textile pouches, hair accessories, and artisan gift tags. Nothing goes to waste."
+      }
+    ],
+    "curationProcess": {
+      "headline": "How We Pick & Craft Every Piece",
+      "steps": [
+        {
+          "step": "01",
+          "title": "Textile Discovery",
+          "description": "We travel directly to artisanal weaving hubs across Madhya Pradesh, Bengal, and Gujarat to hand-select ethically spun yarn and natural vat dyes."
+        },
+        {
+          "step": "02",
+          "title": "Anatomical Drape Testing",
+          "description": "Each silhouette is drafted, sampled on diverse Indian body profiles, and wear-tested over four weeks to verify all-day comfort and mobility."
+        },
+        {
+          "step": "03",
+          "title": "Single-Needle Tailoring",
+          "description": "Master tailors finish each dress with French seams, concealed deep pockets, hand-stitched hem bindings, and natural mother-of-pearl buttons."
+        }
+      ]
+    },
+    "facts": [
+      {
+        "value": "100%",
+        "label": "Biodegradable Fibers"
+      },
+      {
+        "value": "30+",
+        "label": "Master Artisan Guilds"
+      },
+      {
+        "value": "50",
+        "label": "Max Pieces Per Run"
+      },
+      {
+        "value": "Zero",
+        "label": "Synthetic Plastic Blends"
+      }
+    ]
+  },
+  "contact": {
+    "headline": "Visit Our Atelier & Styling Parlour",
+    "subtext": "Whether you are looking for custom sizing, bridal party dressing, or simply want to feel the weight of our handlooms in person, our doors are open.",
+    "whatsappPrefill": "I would like to inquire about your collection and styling options."
+  },
+  "footer": {
+    "shippingBadge": "Worldwide shipping available on request. Complimentary domestic delivery on orders over ₹2,500.",
+    "returnPolicy": "7-day unhurried returns and size exchanges for unworn pieces in original condition.",
+    "copyright": "All rights reserved. Slow fashion, crafted with devotion."
+  }
+}

@@ -1,0 +1,116 @@
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--space-lg); flex-wrap: wrap; gap: var(--space-md);">
+  <div>
+    <span class="eyebrow-label">Fulfillment Queue</span>
+    <h1 class="font-serif" style="font-size: var(--text-2xl); color: #14110F;">Customer Orders</h1>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <form method="GET" action="/admin/orders" style="display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center;">
+    <select name="status" id="admin-status-filter" class="form-select" style="min-height: 38px; width: 170px;">
+      <option value="">All Statuses</option>
+      <option value="NEW" <%= status === 'NEW' ? 'selected' : '' %>>NEW</option>
+      <option value="PENDING_PAYMENT" <%= status === 'PENDING_PAYMENT' ? 'selected' : '' %>>PENDING_PAYMENT</option>
+      <option value="CONFIRMED" <%= status === 'CONFIRMED' ? 'selected' : '' %>>CONFIRMED</option>
+      <option value="PACKED" <%= status === 'PACKED' ? 'selected' : '' %>>PACKED</option>
+      <option value="SHIPPED" <%= status === 'SHIPPED' ? 'selected' : '' %>>SHIPPED</option>
+      <option value="DELIVERED" <%= status === 'DELIVERED' ? 'selected' : '' %>>DELIVERED</option>
+      <option value="RETURN_REQUESTED" <%= status === 'RETURN_REQUESTED' ? 'selected' : '' %>>RETURN_REQUESTED</option>
+      <option value="RETURNED" <%= status === 'RETURNED' ? 'selected' : '' %>>RETURNED</option>
+      <option value="CANCELLED" <%= status === 'CANCELLED' ? 'selected' : '' %>>CANCELLED</option>
+      <option value="REFUNDED" <%= status === 'REFUNDED' ? 'selected' : '' %>>REFUNDED</option>
+    </select>
+
+    <input
+      type="search"
+      name="q"
+      class="form-input"
+      placeholder="Order #, customer or phone..."
+      value="<%= q %>"
+      style="min-height: 38px; width: 220px;"
+    />
+
+    <button type="submit" class="btn btn-secondary btn-sm" style="height: 38px;">
+      Filter
+    </button>
+    <% if (status || q) { %>
+      <a href="/admin/orders" class="btn btn-sm" style="color: var(--color-text-muted);">Reset</a>
+    <% } %>
+  </form>
+</div>
+
+<!-- Orders Table -->
+<div style="overflow-x: auto; background: #FFFFFF; border: 1px solid var(--color-border); border-radius: var(--radius-xs); box-shadow: var(--shadow-subtle);">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Order Number</th>
+        <th>Customer</th>
+        <th>Phone</th>
+        <th>Payment</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Placed</th>
+        <th style="text-align: right;">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (orders && orders.length > 0) { %>
+        <% orders.forEach(o => { %>
+          <tr>
+            <td>
+              <a href="/admin/orders/<%= o.order_no %>" style="font-weight: 600; color: var(--color-oxblood); text-decoration: underline;">
+                <%= o.order_no %>
+              </a>
+            </td>
+            <td><%= o.customer_name || 'Guest' %></td>
+            <td><%= o.customer_phone || '—' %></td>
+            <td>
+              <span style="font-size: 0.7rem; font-weight: 600; color: <%= o.payment_status === 'PAID' ? 'var(--color-status-success)' : 'var(--color-status-warn)' %>;">
+                <%= o.payment_mode %> (<%= o.payment_status %>)
+              </span>
+            </td>
+            <td><%= o.items %> pcs</td>
+            <td style="font-weight: 600;"><%= formatInr(o.total) %></td>
+            <td>
+              <span class="status-badge badge-<%= o.status %>"><%= o.status %></span>
+            </td>
+            <td style="color: var(--color-text-muted); font-size: 0.7rem;">
+              <%= new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %>
+            </td>
+            <td style="text-align: right;">
+              <a href="/admin/orders/<%= o.order_no %>" class="btn btn-secondary btn-sm">
+                Manage &rarr;
+              </a>
+            </td>
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr>
+          <td colspan="9" style="text-align: center; padding: var(--space-2xl); color: var(--color-text-muted);">
+            No orders found matching the specified query.
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination Controls -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-lg);">
+  <div style="font-size: var(--text-xs); color: var(--color-text-muted);">
+    Page <%= page %>
+  </div>
+  <div style="display: flex; gap: var(--space-xs);">
+    <% if (page > 1) { %>
+      <a href="/admin/orders?page=<%= page - 1 %><%= status ? '&status=' + status : '' %><%= q ? '&q=' + encodeURIComponent(q) : '' %>" class="btn btn-secondary btn-sm">
+        &larr; Previous Page
+      </a>
+    <% } %>
+    <% if (orders && orders.length === limit) { %>
+      <a href="/admin/orders?page=<%= page + 1 %><%= status ? '&status=' + status : '' %><%= q ? '&q=' + encodeURIComponent(q) : '' %>" class="btn btn-secondary btn-sm">
+        Next Page &rarr;
+      </a>
+    <% } %>
+  </div>
+</div>

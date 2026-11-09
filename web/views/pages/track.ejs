@@ -1,0 +1,154 @@
+<div class="site-container" style="padding-top: var(--space-2xl); padding-bottom: var(--space-3xl); max-width: 720px;">
+  <!-- Header -->
+  <div style="text-align: center; margin-bottom: var(--space-2xl);">
+    <span class="eyebrow-label">Order Concierge</span>
+    <h1 class="section-title">Track Your Shipment</h1>
+    <p class="section-subtitle" style="margin: 0 auto;">
+      Enter your order number and the last 4 digits of your contact phone to see live fulfillment updates.
+    </p>
+  </div>
+
+  <!-- Search Form -->
+  <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xs); padding: var(--space-xl); margin-bottom: var(--space-2xl); box-shadow: var(--shadow-subtle);">
+    <form method="POST" action="/track" style="display: flex; flex-direction: column; gap: var(--space-md);">
+      <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+
+      <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-md);" class="track-form-grid">
+        <style>
+          @media (min-width: 600px) {
+            .track-form-grid {
+              grid-template-columns: 1.5fr 1fr !important;
+            }
+          }
+        </style>
+
+        <div class="form-group" style="margin: 0;">
+          <label for="order_no" class="form-label">Order Number *</label>
+          <input
+            type="text"
+            id="order_no"
+            name="order_no"
+            class="form-input"
+            placeholder="e.g. DS-2611-00001"
+            value="<%= orderNo %>"
+            required
+            autocomplete="off"
+            style="text-transform: uppercase;"
+          />
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+          <label for="phone4" class="form-label">Last 4 Digits of Mobile *</label>
+          <input
+            type="text"
+            id="phone4"
+            name="phone4"
+            class="form-input"
+            placeholder="e.g. 3210"
+            value="<%= phone4 %>"
+            pattern="[0-9]{4}"
+            maxlength="4"
+            required
+          />
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="margin-top: var(--space-xs);">
+        Find Order Status
+      </button>
+    </form>
+  </div>
+
+  <!-- Friendly Error Handling (404, 429, etc) -->
+  <% if (trackError) { %>
+    <div style="background-color: var(--color-status-error-bg); border-left: 3px solid var(--color-status-error); padding: var(--space-md) var(--space-lg); border-radius: var(--radius-xs); margin-bottom: var(--space-xl);">
+      <h3 style="font-size: var(--text-sm); font-weight: 600; color: var(--color-status-error); margin-bottom: 4px;">
+        Lookup Notice
+      </h3>
+      <p style="font-size: var(--text-xs); color: var(--color-text);">
+        <%= trackError %>
+      </p>
+      <p style="font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 8px;">
+        Need direct assistance? Chat with our team on
+        <a href="https://wa.me/<%= config.whatsappNumber %>?text=<%= encodeURIComponent('Hello! I need help tracking my order #' + (orderNo || '')) %>" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; color: var(--color-oxblood);">
+          WhatsApp (+<%= config.whatsappNumber %>)
+        </a>
+      </p>
+    </div>
+  <% } %>
+
+  <!-- Tracking Details Result -->
+  <% if (trackResult) { %>
+    <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xs); padding: var(--space-xl); box-shadow: var(--shadow-subtle);">
+      <!-- Summary Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-md); margin-bottom: var(--space-lg); flex-wrap: wrap; gap: var(--space-sm);">
+        <div>
+          <span class="eyebrow-label">Order #<%= trackResult.order_no %></span>
+          <h2 class="font-serif" style="font-size: var(--text-xl);">
+            Status: <span class="status-badge badge-<%= trackResult.status %>"><%= trackResult.status %></span>
+          </h2>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: var(--text-2xs); color: var(--color-text-muted); text-transform: uppercase;">Total Value</div>
+          <div style="font-size: var(--text-md); font-weight: 700; color: var(--color-oxblood);">
+            <%= formatInr(trackResult.total) %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Courier / AWB Banner if present -->
+      <% if (trackResult.courier || trackResult.awb) { %>
+        <div style="background-color: rgba(176, 141, 87, 0.1); border: 1px solid var(--color-brass); padding: var(--space-md); border-radius: var(--radius-xs); margin-bottom: var(--space-xl);">
+          <div style="font-size: var(--text-2xs); text-transform: uppercase; font-weight: 600; color: var(--color-brass-dark); margin-bottom: 2px;">
+            Shipping Courier Partner
+          </div>
+          <div style="font-size: var(--text-sm); font-weight: 600; color: var(--color-text);">
+            <%= trackResult.courier || 'Express Domestic Delivery' %>
+          </div>
+          <% if (trackResult.awb) { %>
+            <div style="font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 4px;">
+              AWB Tracking Code: <strong style="color: var(--color-text); font-family: monospace;"><%= trackResult.awb %></strong>
+            </div>
+          <% } %>
+        </div>
+      <% } %>
+
+      <!-- Status History Timeline -->
+      <h3 class="font-serif" style="font-size: var(--text-md); margin-bottom: var(--space-md);">
+        Fulfillment Journey
+      </h3>
+      <div class="timeline">
+        <% if (trackResult.history && trackResult.history.length > 0) { %>
+          <% trackResult.history.forEach((step, idx) => { %>
+            <div class="timeline-step <%= idx === trackResult.history.length - 1 ? 'is-latest' : '' %>">
+              <div class="timeline-dot"></div>
+              <div class="timeline-title"><%= step.status %></div>
+              <div class="timeline-date">
+                <%= new Date(step.at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) %>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="timeline-step is-latest">
+            <div class="timeline-dot"></div>
+            <div class="timeline-title">Order Received</div>
+            <div class="timeline-date"><%= new Date(trackResult.created_at).toLocaleString('en-IN') %></div>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Items List -->
+      <h3 class="font-serif" style="font-size: var(--text-md); margin-top: var(--space-xl); margin-bottom: var(--space-sm); border-top: 1px solid var(--color-border); padding-top: var(--space-md);">
+        Pieces in Shipment
+      </h3>
+      <ul style="list-style: none; display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--text-xs);">
+        <% (trackResult.items || []).forEach(it => { %>
+          <li style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(20,17,15,0.06); padding: 4px 0;">
+            <span><strong><%= it.product %></strong> (<%= it.size %>, <%= it.colour %>)</span>
+            <span style="font-weight: 500;">Qty: <%= it.qty %></span>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+  <% } %>
+</div>

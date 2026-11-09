@@ -1,0 +1,131 @@
+<%
+  const totalAvailable = (product.variants || []).reduce((acc, v) => acc + (v.available || 0), 0);
+  const isSoldOut = !product.in_stock || totalAvailable <= 0;
+  const isLowStock = !isSoldOut && totalAvailable <= 3;
+  const firstAvailableVariant = (product.variants || []).find(v => v.available > 0) || product.variants[0];
+%>
+<div class="site-container" style="padding-top: var(--space-2xl); padding-bottom: var(--space-3xl);">
+  <!-- Breadcrumbs -->
+  <nav aria-label="Breadcrumb" style="margin-bottom: var(--space-lg); font-size: var(--text-xs); color: var(--color-text-muted);">
+    <a href="/" class="animated-link">Home</a> /
+    <a href="/shop" class="animated-link">Collection</a> /
+    <a href="/shop?category=<%= encodeURIComponent(product.category) %>" class="animated-link"><%= product.category %></a> /
+    <span style="color: var(--color-text);"><%= product.name %></span>
+  </nav>
+
+  <!-- Product Details Grid -->
+  <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-2xl); align-items: start;" class="product-detail-layout">
+    <style>
+      @media (min-width: 840px) {
+        .product-detail-layout {
+          grid-template-columns: 1.1fr 0.9fr !important;
+        }
+      }
+    </style>
+
+    <!-- Product Media -->
+    <div style="position: relative; background-color: var(--color-bg-alt); border: 1px solid var(--color-border); aspect-ratio: 3 / 4; overflow: hidden; border-radius: var(--radius-xs);">
+      <% if (isSoldOut) { %>
+        <span class="card-badge card-badge-soldout">Sold Out</span>
+      <% } else if (isLowStock) { %>
+        <span class="card-badge card-badge-lowstock">Only <%= totalAvailable %> left</span>
+      <% } %>
+
+      <% if (product.image_url && product.image_url.trim()) { %>
+        <img
+          src="<%= product.image_url %>"
+          alt="<%= product.name %>"
+          style="width: 100%; height: 100%; object-fit: cover;"
+          onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'product-placeholder\'><span class=\'placeholder-initials\'><%= getInitials(product.name) %></span><span class=\'placeholder-tag\'>Aura & Thread</span></div>';"
+        />
+      <% } else { %>
+        <div class="product-placeholder">
+          <span class="placeholder-initials"><%= getInitials(product.name) %></span>
+          <span class="placeholder-tag">Aura & Thread Atelier</span>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Product Purchasing Info & Variants -->
+    <div style="display: flex; flex-direction: column; gap: var(--space-lg);">
+      <div>
+        <span class="eyebrow-label"><%= product.category %></span>
+        <h1 class="font-serif" style="font-size: var(--text-2xl); line-height: 1.15; color: var(--color-text); margin-bottom: var(--space-xs);">
+          <%= product.name %>
+        </h1>
+        <div class="font-serif" style="font-size: var(--text-xl); font-weight: 600; color: var(--color-oxblood);">
+          <%= formatInr(product.price_inr) %>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div style="font-size: var(--text-base); color: var(--color-text-muted); line-height: 1.7; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); padding: var(--space-md) 0;">
+        <%= product.description %>
+      </div>
+
+      <!-- Add to Bag Form (Works fully without JavaScript!) -->
+      <form method="POST" action="/cart/add" style="display: flex; flex-direction: column; gap: var(--space-md);">
+        <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+
+        <!-- Variant Selector -->
+        <div class="variant-group">
+          <label for="variant-select" class="variant-label">Choose Size & Colour:</label>
+          <select id="variant-select" name="sku" class="form-select" required>
+            <% (product.variants || []).forEach(v => { %>
+              <option value="<%= v.sku %>" <%= v.available <= 0 ? 'disabled' : '' %> <%= v.sku === firstAvailableVariant?.sku ? 'selected' : '' %>>
+                <%= v.size %> — <%= v.colour %> (<%= v.available > 0 ? (v.available <= 3 ? 'Only ' + v.available + ' left' : 'In Stock') : 'Sold Out' %>)
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Quantity Selection -->
+        <div style="display: flex; gap: var(--space-md); align-items: center;">
+          <div style="width: 110px;">
+            <label for="product-qty" class="variant-label">Quantity:</label>
+            <input type="number" id="product-qty" name="qty" class="form-input" value="1" min="1" max="<%= firstAvailableVariant ? firstAvailableVariant.available : 1 %>" required>
+          </div>
+
+          <div style="flex: 1; padding-top: 20px;">
+            <button type="submit" class="btn btn-primary btn-block" <%= isSoldOut ? 'disabled' : '' %>>
+              <%= isSoldOut ? 'Sold Out' : 'Add to Bag' %>
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- WhatsApp Stylist Query Link -->
+      <div style="margin-top: var(--space-sm);">
+        <a href="https://wa.me/<%= config.whatsappNumber %>?text=<%= encodeURIComponent('Hello Aura & Thread! I have a question about the ' + product.name + ' (SKU: ' + (firstAvailableVariant ? firstAvailableVariant.sku : '') + ').') %>"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="btn btn-secondary btn-sm btn-block"
+           style="justify-content: center;">
+          Inquire About Sizing on WhatsApp
+        </a>
+      </div>
+
+      <!-- Garment & Atelier Care Attributes -->
+      <div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: var(--space-md); border-radius: var(--radius-xs); font-size: var(--text-xs); color: var(--color-text-muted); display: flex; flex-direction: column; gap: var(--space-xs);">
+        <div><strong>🧵 Craft:</strong> Handloom woven on traditional wooden pit looms.</div>
+        <div><strong>🌿 Composition:</strong> 100% natural biodegradable yarns.</div>
+        <div><strong>💧 Care:</strong> Gentle hand wash cold with mild pH-neutral detergent or dry clean.</div>
+        <div><strong>📦 Delivery:</strong> Hand-inspected and dispatched within 24-48 business hours.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Related Silhouettes -->
+  <% if (related && related.length > 0) { %>
+    <section style="margin-top: var(--space-3xl); border-top: 1px solid var(--color-border); padding-top: var(--space-2xl);">
+      <h2 class="section-title font-serif" style="font-size: var(--text-xl); margin-bottom: var(--space-lg);">
+        You May Also Admire
+      </h2>
+      <div class="product-grid">
+        <% related.forEach((relProduct, idx) => { %>
+          <%- include('../partials/product-card', { product: relProduct, index: idx }) %>
+        <% }) %>
+      </div>
+    </section>
+  <% } %>
+</div>

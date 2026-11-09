@@ -1,0 +1,216 @@
+<div class="site-container" style="padding-top: var(--space-2xl); padding-bottom: var(--space-3xl); max-width: 960px;">
+  <div style="margin-bottom: var(--space-xl); text-align: center;">
+    <span class="eyebrow-label">Secure Order Placement</span>
+    <h1 class="section-title">Delivery & Payment Details</h1>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-xl);" class="checkout-grid">
+    <style>
+      @media (min-width: 768px) {
+        .checkout-grid {
+          grid-template-columns: 1.5fr 1fr !important;
+        }
+      }
+    </style>
+
+    <!-- Checkout Form -->
+    <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xs); padding: var(--space-xl);">
+      <form method="POST" action="/checkout" id="checkout-form" novalidate>
+        <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+        <input type="hidden" name="idempotency_key" value="<%= idempotencyKey %>">
+
+        <h2 class="font-serif" style="font-size: var(--text-lg); margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-xs);">
+          1. Delivery Information
+        </h2>
+
+        <!-- Full Name -->
+        <div class="form-group">
+          <label for="name" class="form-label">Full Name *</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            class="form-input <%= errors.name ? 'is-error' : '' %>"
+            placeholder="e.g. Ananya Sen"
+            value="<%= form.name || '' %>"
+            required
+            autocomplete="name"
+          />
+          <% if (errors.name) { %>
+            <span class="field-error-msg"><%= errors.name %></span>
+          <% } %>
+        </div>
+
+        <!-- Phone Number (10 digit Indian mobile) -->
+        <div class="form-group">
+          <label for="phone" class="form-label">Mobile Number (10 digits) *</label>
+          <div style="display: flex; gap: var(--space-xs);">
+            <span style="display: inline-flex; align-items: center; padding: 0 var(--space-sm); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-xs); font-size: var(--text-sm); font-weight: 500;">
+              +91
+            </span>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              class="form-input <%= errors.phone ? 'is-error' : '' %>"
+              placeholder="9876543210"
+              value="<%= form.phone || '' %>"
+              pattern="[6-9][0-9]{9}"
+              maxlength="10"
+              required
+              autocomplete="tel"
+            />
+          </div>
+          <% if (errors.phone) { %>
+            <span class="field-error-msg"><%= errors.phone %></span>
+          <% } else { %>
+            <span style="font-size: var(--text-2xs); color: var(--color-text-muted);">Used for dispatch tracking updates and order confirmation.</span>
+          <% } %>
+        </div>
+
+        <!-- Shipping Address -->
+        <div class="form-group">
+          <label for="address" class="form-label">Complete Street Address *</label>
+          <textarea
+            id="address"
+            name="address"
+            class="form-textarea <%= errors.address ? 'is-error' : '' %>"
+            placeholder="Flat/House No., Building Name, Street, Landmark, City & State"
+            required
+            autocomplete="street-address"
+          ><%= form.address || '' %></textarea>
+          <% if (errors.address) { %>
+            <span class="field-error-msg"><%= errors.address %></span>
+          <% } %>
+        </div>
+
+        <!-- 6-digit Pincode -->
+        <div class="form-group">
+          <label for="pincode" class="form-label">Postal PIN Code (6 digits) *</label>
+          <input
+            type="text"
+            id="pincode"
+            name="pincode"
+            class="form-input <%= errors.pincode ? 'is-error' : '' %>"
+            placeholder="e.g. 560001"
+            value="<%= form.pincode || '' %>"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            required
+            autocomplete="postal-code"
+          />
+          <% if (errors.pincode) { %>
+            <span class="field-error-msg"><%= errors.pincode %></span>
+          <% } %>
+        </div>
+
+        <!-- Special Notes (Optional) -->
+        <div class="form-group">
+          <label for="notes" class="form-label">Delivery Instructions (Optional)</label>
+          <input
+            type="text"
+            id="notes"
+            name="notes"
+            class="form-input"
+            placeholder="e.g. Ring bell twice, leave with security"
+            value="<%= form.notes || '' %>"
+          />
+        </div>
+
+        <!-- Payment Method Choice -->
+        <h2 class="font-serif" style="font-size: var(--text-lg); margin: var(--space-xl) 0 var(--space-md) 0; border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-xs);">
+          2. Payment Method
+        </h2>
+
+        <!-- Option 1: Direct UPI (Default) -->
+        <label class="payment-choice-card <%= (!form.payment_mode || form.payment_mode === 'UPI') ? 'is-active' : '' %>">
+          <input
+            type="radio"
+            name="payment_mode"
+            value="UPI"
+            <%= (!form.payment_mode || form.payment_mode === 'UPI') ? 'checked' : '' %>
+            style="margin-top: 3px;"
+          />
+          <div>
+            <div style="font-weight: 600; font-size: var(--text-sm); color: var(--color-text);">
+              Direct UPI (Instant QR / Zero Fees) — Recommended
+            </div>
+            <div style="font-size: var(--text-2xs); color: var(--color-text-muted); margin-top: 2px;">
+              Pay via Google Pay, PhonePe, Paytm, BHIM, or your UPI app. Stock is immediately held for 30 minutes while you complete payment.
+            </div>
+          </div>
+        </label>
+
+        <!-- Option 2: Cash on Delivery -->
+        <label class="payment-choice-card <%= form.payment_mode === 'COD' ? 'is-active' : '' %>">
+          <input
+            type="radio"
+            name="payment_mode"
+            value="COD"
+            <%= form.payment_mode === 'COD' ? 'checked' : '' %>
+            style="margin-top: 3px;"
+          />
+          <div>
+            <div style="font-weight: 600; font-size: var(--text-sm); color: var(--color-text);">
+              Cash on Delivery (COD)
+            </div>
+            <div style="font-size: var(--text-2xs); color: var(--color-text-muted); margin-top: 2px;">
+              Pay cash or UPI upon courier arrival at your doorstep. We will verify your order on WhatsApp or phone before packing.
+            </div>
+          </div>
+        </label>
+
+        <!-- Submit Button -->
+        <div style="margin-top: var(--space-xl);">
+          <button type="submit" class="btn btn-primary btn-block" style="min-height: 48px;">
+            Place Order (<%= formatInr(cart.total) %>) &rarr;
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right Sidebar: Order Bag Summary -->
+    <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xs); padding: var(--space-lg); height: fit-content; display: flex; flex-direction: column; gap: var(--space-md);">
+      <h2 class="font-serif" style="font-size: var(--text-lg); border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-xs);">
+        Order Bag (<%= cart.itemCount %>)
+      </h2>
+
+      <div style="display: flex; flex-direction: column; gap: var(--space-sm); max-height: 320px; overflow-y: auto;">
+        <% cart.items.forEach(it => { %>
+          <div style="display: flex; justify-content: space-between; font-size: var(--text-xs); border-bottom: 1px solid rgba(20,17,15,0.06); padding-bottom: var(--space-xs);">
+            <div>
+              <div style="font-weight: 600; color: var(--color-text);"><%= it.product %></div>
+              <div style="color: var(--color-text-muted); font-size: 0.7rem; text-transform: uppercase;">
+                <%= it.size %> / <%= it.colour %> &times; <%= it.qty %>
+              </div>
+            </div>
+            <div style="font-weight: 500;">
+              <%= formatInr(it.line_total) %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; font-size: var(--text-sm);">
+        <span>Subtotal</span>
+        <span><%= formatInr(cart.subtotal) %></span>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; font-size: var(--text-sm);">
+        <span>Shipping</span>
+        <span><%= cart.shipping === 0 ? 'Complimentary' : formatInr(cart.shipping) %></span>
+      </div>
+
+      <div style="border-top: 1px solid var(--color-border); padding-top: var(--space-sm); display: flex; justify-content: space-between; font-size: var(--text-md); font-weight: 700;">
+        <span>Total Amount</span>
+        <span style="color: var(--color-oxblood);"><%= formatInr(cart.total) %></span>
+      </div>
+
+      <div style="font-size: var(--text-2xs); color: var(--color-brass-dark); line-height: 1.5; border-top: 1px solid var(--color-border); padding-top: var(--space-sm);">
+        🛡️ Single-batch guarantee: pieces in your order are securely reserved upon placement.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/js/checkout.js"></script>

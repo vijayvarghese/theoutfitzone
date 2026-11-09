@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>Staff Portal Login | <%= storeName %></title>
+  <link rel="stylesheet" href="/static/css/staff.css?v=<%= Date.now() %>">
+  <style>
+    body {
+      background-color: #0F172A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .login-card {
+      background: #FFFFFF;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 420px;
+      padding: 36px 32px;
+    }
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      background: #4F46E5;
+      color: #FFFFFF;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div style="text-align: center; margin-bottom: 28px;">
+      <div class="brand-mark">HQ</div>
+      <h1 style="font-size: 20px; font-weight: 700; color: #111827;"><%= storeName %></h1>
+      <p style="font-size: 13px; color: #6B7280; margin-top: 4px;">Staff Management Portal & Operations</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-error" style="margin-bottom: 20px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span><%= error %></span>
+      </div>
+    <% } %>
+
+    <form method="POST" action="/login" id="login-form">
+      <input type="hidden" name="returnTo" value="<%= returnTo %>">
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="form-label" for="username" style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px;">Staff Username</label>
+        <input type="text" id="username" name="username" class="form-input" style="width: 100%;" placeholder="Enter username" required autofocus>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 24px;">
+        <label class="form-label" for="password" style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px;">Staff Password</label>
+        <input type="password" id="password" name="password" class="form-input" style="width: 100%;" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 11px; font-weight: 600; font-size: 14px;">
+        Sign In to Portal &rarr;
+      </button>
+    </form>
+
+    <div style="margin-top: 28px; text-align: center; border-top: 1px solid #F3F4F6; padding-top: 16px; font-size: 12px; color: #9CA3AF;">
+      Secure back-office system &bull; Authorized personnel only
+    </div>
+  </div>
+</body>
+</html>

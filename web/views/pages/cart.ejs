@@ -1,0 +1,155 @@
+<div class="site-container" style="padding-top: var(--space-2xl); padding-bottom: var(--space-3xl); max-width: 960px;">
+  <!-- Page Header -->
+  <div style="margin-bottom: var(--space-xl); text-align: center;">
+    <span class="eyebrow-label">Review Selection</span>
+    <h1 class="section-title">Your Shopping Bag</h1>
+  </div>
+
+  <!-- Live Sync Notices / Stock Adjustments -->
+  <% if (cart.notices && cart.notices.length > 0) { %>
+    <div style="background-color: var(--color-status-warn-bg); border-left: 3px solid var(--color-brass); padding: var(--space-md); border-radius: var(--radius-xs); margin-bottom: var(--space-xl);">
+      <h3 style="font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; color: var(--color-status-warn); margin-bottom: 4px;">
+        Live Stock Updates
+      </h3>
+      <ul style="list-style: none; font-size: var(--text-xs); color: var(--color-text);">
+        <% cart.notices.forEach(notice => { %>
+          <li>• <%= notice %></li>
+        <% }) %>
+      </ul>
+    </div>
+  <% } %>
+
+  <!-- Flash notice from actions -->
+  <% if (flashNotice) { %>
+    <div style="background-color: var(--color-status-success-bg); border-left: 3px solid var(--color-status-success); padding: var(--space-md); border-radius: var(--radius-xs); margin-bottom: var(--space-xl); font-size: var(--text-sm);">
+      <%= flashNotice %>
+    </div>
+  <% } %>
+
+  <% if (cart.items && cart.items.length > 0) { %>
+    <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-xl);" class="cart-page-grid">
+      <style>
+        @media (min-width: 768px) {
+          .cart-page-grid {
+            grid-template-columns: 1.6fr 1fr !important;
+          }
+        }
+      </style>
+
+      <!-- Cart Items Table / List -->
+      <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xs); padding: var(--space-lg);">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--color-border); text-align: left; font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-muted);">
+              <th style="padding-bottom: var(--space-sm);">Silhouette</th>
+              <th style="padding-bottom: var(--space-sm); text-align: center;">Qty</th>
+              <th style="padding-bottom: var(--space-sm); text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% cart.items.forEach(it => { %>
+              <tr style="border-bottom: 1px solid var(--color-border);">
+                <!-- Item Info -->
+                <td style="padding: var(--space-md) 0; vertical-align: top;">
+                  <div style="font-family: var(--font-serif); font-size: var(--text-md); font-weight: 600; color: var(--color-text);">
+                    <%= it.product %>
+                  </div>
+                  <div style="font-size: var(--text-2xs); color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 2px 0 8px 0;">
+                    Size: <%= it.size %> | Colour: <%= it.colour %>
+                  </div>
+                  <div style="font-size: var(--text-xs); color: var(--color-text);">
+                    <%= formatInr(it.price_inr) %> each
+                  </div>
+                  <form method="POST" action="/cart/remove" style="margin-top: 8px;">
+                    <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+                    <input type="hidden" name="sku" value="<%= it.sku %>">
+                    <button type="submit" style="font-size: var(--text-2xs); color: var(--color-status-error); text-decoration: underline; cursor: pointer;">
+                      Remove piece
+                    </button>
+                  </form>
+                </td>
+
+                <!-- Quantity controls -->
+                <td style="padding: var(--space-md) 0; vertical-align: top; text-align: center;">
+                  <form method="POST" action="/cart/update" style="display: inline-flex; align-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-xs); background: var(--color-bg);">
+                    <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+                    <input type="hidden" name="sku" value="<%= it.sku %>">
+                    <button type="submit" name="qty" value="<%= it.qty - 1 %>" class="qty-btn" aria-label="Decrease quantity">−</button>
+                    <span class="qty-val"><%= it.qty %></span>
+                    <button type="submit" name="qty" value="<%= it.qty + 1 %>" class="qty-btn" <%= it.qty >= it.available ? 'disabled' : '' %> aria-label="Increase quantity">+</button>
+                  </form>
+                  <div style="font-size: 0.65rem; color: var(--color-brass-dark); margin-top: 4px;">
+                    <%= it.available %> in stock
+                  </div>
+                </td>
+
+                <!-- Line Total -->
+                <td style="padding: var(--space-md) 0; vertical-align: top; text-align: right; font-weight: 600; font-size: var(--text-sm);">
+                  <%= formatInr(it.line_total) %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+
+        <div style="margin-top: var(--space-md);">
+          <a href="/shop" class="animated-link" style="font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; color: var(--color-brass-dark);">
+            &larr; Continue Exploring Collection
+          </a>
+        </div>
+      </div>
+
+      <!-- Order Summary Card -->
+      <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xs); padding: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-md); height: fit-content;">
+        <h2 class="font-serif" style="font-size: var(--text-lg); border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-xs);">
+          Order Summary
+        </h2>
+
+        <!-- Free shipping meter -->
+        <div style="background: rgba(176, 141, 87, 0.1); border-radius: var(--radius-xs); padding: var(--space-xs) var(--space-sm); font-size: var(--text-xs); color: var(--color-brass-dark); text-align: center;">
+          <% if (cart.isFreeShipping) { %>
+            ✨ You qualify for complimentary domestic delivery!
+          <% } else { %>
+            Add <%= formatInr(cart.freeShippingDelta) %> more to unlock complimentary delivery.
+          <% } %>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: var(--text-sm);">
+          <span>Subtotal (<%= cart.itemCount %> items)</span>
+          <span style="font-weight: 500;"><%= formatInr(cart.subtotal) %></span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: var(--text-sm);">
+          <span>Domestic Shipping</span>
+          <span style="font-weight: 500;">
+            <%= cart.shipping === 0 ? 'Complimentary' : formatInr(cart.shipping) %>
+          </span>
+        </div>
+
+        <div style="border-top: 1px solid var(--color-border); padding-top: var(--space-sm); display: flex; justify-content: space-between; font-size: var(--text-md); font-weight: 700;">
+          <span>Grand Total</span>
+          <span style="color: var(--color-oxblood);"><%= formatInr(cart.total) %></span>
+        </div>
+
+        <a href="/checkout" class="btn btn-primary btn-block" style="margin-top: var(--space-sm);">
+          Proceed to Checkout &rarr;
+        </a>
+
+        <div style="font-size: var(--text-2xs); color: var(--color-text-muted); text-align: center; margin-top: var(--space-xs); line-height: 1.5;">
+          🔒 Direct UPI & Cash on Delivery. Prices and reservations are calculated in real time.
+        </div>
+      </div>
+    </div>
+  <% } else { %>
+    <!-- Empty Bag State -->
+    <div style="text-align: center; padding: var(--space-3xl) 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xs);">
+      <h2 class="font-serif" style="font-size: var(--text-xl); margin-bottom: var(--space-xs);">Your Bag is Empty</h2>
+      <p style="font-size: var(--text-sm); color: var(--color-text-muted); max-width: 440px; margin: 0 auto var(--space-xl) auto;">
+        You haven't selected any artisanal pieces yet. Explore our handcrafted dresses and tailored separates.
+      </p>
+      <a href="/shop" class="btn btn-primary">
+        Discover the Collection
+      </a>
+    </div>
+  <% } %>
+</div>
