@@ -38,12 +38,10 @@ services:
     image: ${WEB_IMAGE}
     restart: unless-stopped
     ports:
-      - "8081:3000"
+      - "${WEB_PORT:-8000}:3000"
     depends_on:
-      shop-api:
-        condition: service_healthy
-      nginx-media:
-        condition: service_healthy
+      - shop-api
+      - nginx-media
     volumes:
       - media-uploads:/app/public/products
     environment:
