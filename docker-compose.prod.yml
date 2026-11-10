@@ -4,12 +4,12 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: shop
-      POSTGRES_PASSWORD: ${DB_PASS:-shopsecret}
+      POSTGRES_PASSWORD: ${DB_PASS:-${POSTGRES_PASSWORD:-shopsecret}}
       POSTGRES_DB: shop
       POSTGRES_HOST_AUTH_METHOD: trust
       TZ: Asia/Kolkata
     volumes:
-      - pgdata_v2:/var/lib/postgresql/data
+      - pgdata_v3:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
@@ -19,12 +19,13 @@ services:
 
   shop-api:
     image: ${API_IMAGE}
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://shop:${DB_PASS:-shopsecret}@db:5432/shop
+      DATABASE_URL: postgres://shop:${DB_PASS:-${POSTGRES_PASSWORD:-shopsecret}}@db:5432/shop
       API_KEY: ${API_KEY}
       ORDER_PREFIX: DS
       RESERVATION_MINUTES: "30"
@@ -37,6 +38,7 @@ services:
 
   web:
     image: ${WEB_IMAGE}
+    pull_policy: always
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-8085}:3000"
@@ -74,6 +76,7 @@ services:
 
   inventory-portal:
     image: ${PORTAL_IMAGE}
+    pull_policy: always
     restart: unless-stopped
     ports:
       - "8082:3000"
@@ -85,7 +88,7 @@ services:
     volumes:
       - media-uploads:/app/uploads
     environment:
-      DATABASE_URL: postgres://shop:${DB_PASS:-shopsecret}@db:5432/shop
+      DATABASE_URL: postgres://shop:${DB_PASS:-${POSTGRES_PASSWORD:-shopsecret}}@db:5432/shop
       PORT: "3000"
       STORE_NAME: ${STORE_NAME:-The OutFit Zone}
       SITE_URL: ${SITE_URL}
@@ -114,7 +117,7 @@ services:
       retries: 5
 
 volumes:
-  pgdata_v2:
+  pgdata_v3:
   media-uploads:
 
 networks:

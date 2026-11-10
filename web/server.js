@@ -23,9 +23,8 @@ if (config.trustProxy) {
   app.set('trust proxy', 1);
 }
 
-// Security headers with dynamic CSP (only force HTTPS/upgrade when SITE_URL is https)
-const isHttps = Boolean(config.siteUrl && config.siteUrl.startsWith('https'));
-
+// Security headers: CSP configured to never force-upgrade insecure requests,
+// allowing direct plain HTTP / IP access while maintaining strict XSS controls.
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -40,10 +39,10 @@ app.use(
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
         formAction: ["'self'"],
-        upgradeInsecureRequests: isHttps ? [] : null
+        upgradeInsecureRequests: null
       }
     },
-    hsts: isHttps ? { maxAge: 31536000, includeSubDomains: true } : false,
+    hsts: false,
     crossOriginEmbedderPolicy: false
   })
 );
