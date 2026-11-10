@@ -66,6 +66,9 @@ services:
       FREE_SHIPPING_ABOVE: ${FREE_SHIPPING_ABOVE:-2500}
       TRUST_PROXY: "true"
       N8N_ORDER_WEBHOOK_URL: ${N8N_ORDER_WEBHOOK_URL:-}
+    networks:
+      - default
+      - dokploy-network
 
   inventory-portal:
     image: ${PORTAL_IMAGE}
@@ -90,6 +93,9 @@ services:
       SESSION_SECRET: ${PORTAL_SESSION_SECRET}
       N8N_ORDER_WEBHOOK_URL: ${N8N_ORDER_WEBHOOK_URL:-}
       TRUST_PROXY: "true"
+    networks:
+      - default
+      - dokploy-network
 
   nginx-media:
     image: nginx:alpine
@@ -106,3 +112,7 @@ services:
 volumes:
   pgdata:
   media-uploads:
+
+networks:
+  dokploy-network:
+    external: true
