@@ -6,7 +6,21 @@ const { Pool, types } = require('pg');
 types.setTypeParser(1700, (v) => parseFloat(v));
 types.setTypeParser(20, (v) => parseInt(v, 10));
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 10 });
+const poolConfig = process.env.PGHOST
+  ? {
+      host: process.env.PGHOST,
+      port: parseInt(process.env.PGPORT || '5432', 10),
+      user: process.env.PGUSER || 'shop',
+      password: process.env.PGPASSWORD || 'shopsecret',
+      database: process.env.PGDATABASE || 'shop',
+      max: 10
+    }
+  : {
+      connectionString: process.env.DATABASE_URL,
+      max: 10
+    };
+
+const pool = new Pool(poolConfig);
 pool.on('error', (e) => console.error('pg pool error', e.message));
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -92,7 +92,7 @@
         <% } %>
 
         <div class="nav-section-label">External Services</div>
-        <a href="http://localhost:8081" target="_blank" class="nav-link" style="color: #60A5FA;">
+        <a href="<%= storefrontUrl %>" target="_blank" class="nav-link" style="color: #60A5FA;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
             <polyline points="15 3 21 3 21 9"></polyline>
@@ -101,7 +101,7 @@
           <span>Main Storefront ↗</span>
         </a>
 
-        <a href="http://localhost:8083/healthz" target="_blank" class="nav-link" style="color: #34D399;">
+        <a href="<%= nginxPreviewUrl %>/healthz" target="_blank" class="nav-link" style="color: #34D399;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
             <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>

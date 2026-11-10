@@ -42,9 +42,23 @@ app.use('/static', express.static(path.join(__dirname, 'public'), {
 
 // Global view locals
 app.use((req, res, next) => {
+  const host = (req.get('host') || '').split(':')[0] || 'localhost';
+  const proto = req.protocol || 'http';
+
+  // Dynamic storefront URL (defaults to current host at port 8085 if not configured or localhost)
+  const storefrontUrl = (process.env.SITE_URL && !process.env.SITE_URL.includes('localhost'))
+    ? process.env.SITE_URL.replace(/\/+$/, '')
+    : `${proto}://${host}:8085`;
+
+  // Dynamic Nginx Media URL (defaults to current host at port 8083 if not configured or localhost)
+  const nginxPreviewUrl = (process.env.NGINX_PREVIEW_URL && !process.env.NGINX_PREVIEW_URL.includes('localhost'))
+    ? process.env.NGINX_PREVIEW_URL.replace(/\/+$/, '')
+    : `${proto}://${host}:8083`;
+
   res.locals.storeName = STORE_NAME;
   res.locals.publicMediaUrl = PUBLIC_MEDIA_URL;
-  res.locals.nginxPreviewUrl = NGINX_PREVIEW_URL;
+  res.locals.storefrontUrl = storefrontUrl;
+  res.locals.nginxPreviewUrl = nginxPreviewUrl;
   res.locals.flash = req.query.flash || null;
   res.locals.error = req.query.error || null;
   res.locals.currentPath = req.path;
