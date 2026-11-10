@@ -47,7 +47,7 @@ app.use(
   })
 );
 
-// Signed HTTP-only session cookies (secure only when TRUST_PROXY is set)
+// Signed HTTP-only session cookies (secure: false allows cookies over plain HTTP / VPS IP)
 app.use(
   cookieSession({
     name: 'atelier_sess',
@@ -55,7 +55,7 @@ app.use(
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     httpOnly: true,
     sameSite: 'lax',
-    secure: config.trustProxy === true
+    secure: false
   })
 );
 
