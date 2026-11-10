@@ -140,6 +140,15 @@ router.get('/product/:id', async (req, res, next) => {
 /**
  * 3. Cart Routes
  */
+router.get('/cart/state', async (req, res) => {
+  try {
+    const cartState = await cart.syncCart(req);
+    res.json({ success: true, cart: cartState });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/cart', async (req, res, next) => {
   try {
     const cartState = await cart.syncCart(req);
@@ -214,6 +223,26 @@ router.post('/cart/remove', async (req, res) => {
 });
 
 /**
+ * Helper to validate session-applied coupon against live cart subtotal
+ */
+async function getValidatedCoupon(req, subtotal) {
+  if (!req.session || !req.session.appliedCoupon) {
+    return { coupon: null, discount: 0 };
+  }
+  try {
+    const res = await api.validateCoupon(req.session.appliedCoupon.code, subtotal);
+    if (res && res.ok && res.coupon) {
+      req.session.appliedCoupon = res.coupon;
+      return { coupon: res.coupon, discount: Number(res.coupon.discount || 0) };
+    }
+  } catch (err) {
+    req.session.couponNotice = err.message || 'Coupon is no longer valid.';
+  }
+  delete req.session.appliedCoupon;
+  return { coupon: null, discount: 0 };
+}
+
+/**
  * 4. Checkout Routes (/checkout)
  */
 router.get('/checkout', async (req, res, next) => {
@@ -223,13 +252,26 @@ router.get('/checkout', async (req, res, next) => {
       return res.redirect('/shop');
     }
 
+    const { coupon, discount } = await getValidatedCoupon(req, cartState.subtotal);
+    const grandTotal = Math.max(0, cartState.total - discount);
+
     // Fresh idempotency key for single-submit form guarantee
     const idempotencyKey = crypto.randomUUID();
+
+    const couponNotice = req.session.couponNotice || null;
+    const couponSuccess = req.session.couponSuccess || null;
+    delete req.session.couponNotice;
+    delete req.session.couponSuccess;
 
     res.render('pages/checkout', {
       title: `Checkout | ${config.storeName}`,
       metaDesc: 'Complete your order securely.',
       cart: cartState,
+      coupon,
+      discount,
+      grandTotal,
+      couponNotice,
+      couponSuccess,
       idempotencyKey,
       errors: {},
       form: {},
@@ -239,6 +281,58 @@ router.get('/checkout', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+router.post('/checkout/apply-coupon', async (req, res) => {
+  const code = String(req.body.code || '').trim().toUpperCase();
+  const isAjax = req.xhr || req.headers.accept?.includes('application/json');
+
+  if (!code) {
+    if (isAjax) return res.status(400).json({ success: false, error: 'Please enter a coupon code.' });
+    req.session.couponNotice = 'Please enter a coupon code.';
+    return res.redirect('/checkout');
+  }
+
+  try {
+    const cartState = await cart.syncCart(req);
+    if (!cartState.items.length) {
+      if (isAjax) return res.status(400).json({ success: false, error: 'Your cart is empty.' });
+      return res.redirect('/shop');
+    }
+
+    const result = await api.validateCoupon(code, cartState.subtotal);
+    if (result && result.ok && result.coupon) {
+      req.session.appliedCoupon = result.coupon;
+      req.session.couponSuccess = `Coupon "${result.coupon.code}" applied! You save ₹${Number(result.coupon.discount).toLocaleString('en-IN')}.`;
+      if (isAjax) {
+        return res.json({
+          success: true,
+          coupon: result.coupon,
+          discount: result.coupon.discount,
+          grandTotal: Math.max(0, cartState.total - result.coupon.discount)
+        });
+      }
+      return res.redirect('/checkout');
+    } else {
+      throw new Error(result?.error || 'Invalid coupon code.');
+    }
+  } catch (err) {
+    if (isAjax) {
+      return res.status(400).json({ success: false, error: err.message || 'Invalid coupon code.' });
+    }
+    req.session.couponNotice = err.message || 'Invalid coupon code.';
+    res.redirect('/checkout');
+  }
+});
+
+router.post('/checkout/remove-coupon', (req, res) => {
+  const isAjax = req.xhr || req.headers.accept?.includes('application/json');
+  delete req.session.appliedCoupon;
+  req.session.couponNotice = 'Coupon removed.';
+  if (isAjax) {
+    return res.json({ success: true });
+  }
+  res.redirect('/checkout');
 });
 
 router.post('/checkout', async (req, res, next) => {
@@ -295,11 +389,19 @@ router.post('/checkout', async (req, res, next) => {
     return res.redirect('/shop');
   }
 
+  const { coupon, discount } = await getValidatedCoupon(req, cartState.subtotal);
+  const grandTotal = Math.max(0, cartState.total - discount);
+
   if (Object.keys(errors).length > 0) {
     return res.status(400).render('pages/checkout', {
       title: `Checkout | ${config.storeName}`,
       metaDesc: 'Complete your order securely.',
       cart: cartState,
+      coupon,
+      discount,
+      grandTotal,
+      couponNotice: null,
+      couponSuccess: null,
       idempotencyKey: idempotency_key || crypto.randomUUID(),
       errors,
       form: {
@@ -329,7 +431,8 @@ router.post('/checkout', async (req, res, next) => {
     payment_mode: paymentMode,
     shipping: cartState.shipping,
     notes: String(notes || '').trim(),
-    idempotency_key: idempotency_key || crypto.randomUUID()
+    idempotency_key: idempotency_key || crypto.randomUUID(),
+    coupon_code: coupon ? coupon.code : null
   };
 
   try {
@@ -342,8 +445,9 @@ router.post('/checkout', async (req, res, next) => {
       req.session.recentOrders.push(order.order_no);
     }
 
-    // Clear cart upon successful order creation
+    // Clear cart and applied coupon upon successful order creation
     cart.clearCart(req);
+    delete req.session.appliedCoupon;
 
     // Asynchronously dispatch webhook to n8n
     dispatchOrderWebhook({
@@ -360,6 +464,11 @@ router.post('/checkout', async (req, res, next) => {
       const friendlyNotice = `Sorry! "${d.product || d.sku} (${d.size || ''})" only has ${d.available ?? 0} item(s) left in stock (you requested ${d.requested || ''}). Your cart has been updated.`;
       req.session.cartNotice = friendlyNotice;
       return res.redirect('/cart');
+    }
+    if (err.status === 400 && (err.code === 'INVALID_COUPON' || (typeof err.code === 'string' && err.code.startsWith('COUPON_')))) {
+      delete req.session.appliedCoupon;
+      req.session.couponNotice = `Coupon notice: ${err.message}`;
+      return res.redirect('/checkout');
     }
     next(err);
   }

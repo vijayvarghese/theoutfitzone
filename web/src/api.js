@@ -59,7 +59,7 @@ async function request(endpoint, options = {}) {
 
   if (!res.ok) {
     const errCode = (data && data.error && data.error.code) || 'API_ERROR';
-    const errMsg = (data && data.error && data.error.message) || `Inventory API returned HTTP ${res.status}`;
+    const errMsg = (typeof (data && data.error) === 'string' ? data.error : (data && data.error && data.error.message)) || `Inventory API returned HTTP ${res.status}`;
     const errDetails = data && data.error && data.error.details;
     throw new ShopApiError(res.status, errCode, errMsg, errDetails);
   }
@@ -93,6 +93,14 @@ module.exports = {
   async trackOrder(orderNo, phone4) {
     const params = new URLSearchParams({ phone4 });
     return await request(`/api/track/${encodeURIComponent(orderNo)}?${params.toString()}`, {
+      method: 'GET',
+      requireKey: false
+    });
+  },
+
+  async validateCoupon(code, subtotal) {
+    const params = new URLSearchParams({ code: String(code || ''), subtotal: String(subtotal || '0') });
+    return await request(`/api/coupons/validate?${params.toString()}`, {
       method: 'GET',
       requireKey: false
     });

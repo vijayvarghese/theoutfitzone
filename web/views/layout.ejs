@@ -36,8 +36,10 @@
   <!-- Footer -->
   <%- include('partials/footer') %>
 
-  <!-- Slide-in Cart Drawer -->
-  <%- include('partials/cart-drawer') %>
+  <!-- Slide-in Cart Drawer (Only rendered on non-cart pages; not present on /cart page) -->
+  <% if (currentPath !== '/cart') { %>
+    <%- include('partials/cart-drawer') %>
+  <% } %>
 
   <!-- Progressive Quick View Modal -->
   <%- include('partials/quick-view-modal') %>
@@ -46,5 +48,6 @@
   <script type="module" src="/js/main.js"></script>
   <script type="module" src="/js/cart.js"></script>
   <script type="module" src="/js/quickview.js"></script>
+  <script type="module" src="/js/product.js"></script>
 </body>
 </html>

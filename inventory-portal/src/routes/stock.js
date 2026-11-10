@@ -1,6 +1,7 @@
 import express from 'express';
 import { query, getClient } from '../db.js';
 import { requireAuth, requireRole } from '../auth.js';
+import { upload } from '../upload.js';
 
 const router = express.Router();
 
@@ -69,6 +70,8 @@ router.get('/', async (req, res, next) => {
         v.sku,
         v.size,
         v.colour,
+        v.image_url AS variant_image_url,
+        COALESCE(v.image_url, p.image_url) AS image_url,
         v.on_hand,
         v.reserved,
         (v.on_hand - v.reserved) AS available,
@@ -77,7 +80,7 @@ router.get('/', async (req, res, next) => {
         p.name AS product_name,
         p.category,
         p.price_inr,
-        p.image_url,
+        p.image_url AS product_image_url,
         p.active AS product_active
       FROM variants v
       JOIN products p ON p.id = v.product_id
@@ -125,27 +128,125 @@ router.get('/', async (req, res, next) => {
 });
 
 // Add New Variant to an Existing Product
-router.post('/variants', requireRole('owner', 'stock_adder'), async (req, res, next) => {
+router.post('/variants', requireRole('owner', 'stock_adder'), upload.single('image'), async (req, res, next) => {
+  const redirectTarget = req.headers.referer || '/stock';
   try {
-    const { product_id, sku, size, colour, on_hand, reorder_level } = req.body;
+    const { product_id, sku, size, colour, on_hand, reorder_level, manual_image_url } = req.body;
 
     const prodIdNum = parseInt(product_id, 10);
-    if (!prodIdNum) throw new Error('A valid product must be selected.');
+    if (!prodIdNum) throw new Error('A valid silhouette / product must be selected.');
 
-    const cleanSku = (sku || '').trim().toUpperCase();
-    if (!cleanSku) throw new Error('SKU is required and must be unique.');
+    const prodRes = await query('SELECT name, category FROM products WHERE id = $1', [prodIdNum]);
+    if (!prodRes.rows.length) throw new Error('Product not found.');
+    const prod = prodRes.rows[0];
 
+    const sizeVal = (size || '').trim() || 'Free Size';
+    const colourVal = (colour || '').trim() || 'Standard';
     const onHandNum = Math.max(0, parseInt(on_hand, 10) || 0);
     const reorderNum = Math.max(0, parseInt(reorder_level, 10) || 2);
 
-    await query(`
-      INSERT INTO variants (product_id, sku, size, colour, on_hand, reserved, reorder_level)
-      VALUES ($1, $2, $3, $4, $5, 0, $6);
-    `, [prodIdNum, cleanSku, (size || '').trim() || null, (colour || '').trim() || null, onHandNum, reorderNum]);
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = `/products/${req.file.filename}`;
+    } else if (manual_image_url && manual_image_url.trim()) {
+      imageUrl = manual_image_url.trim();
+    }
 
-    res.redirect(`/stock?flash=${encodeURIComponent(`Variant ${cleanSku} successfully created.`)}`);
+    let cleanSku = (sku || '').trim().toUpperCase();
+    if (!cleanSku) {
+      // Auto-generate SKU based on product name, colour, size
+      const words = (prod.name || prod.category || 'SIL').trim().split(/\s+/).filter(Boolean);
+      let prefix = '';
+      if (words.length >= 2) {
+        prefix = words.map(w => w[0].toUpperCase()).join('').slice(0, 4);
+      } else if (words.length === 1) {
+        prefix = words[0].slice(0, 3).toUpperCase();
+      }
+      if (!prefix || prefix.length < 2) prefix = 'SIL';
+
+      const colCode = colourVal.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || 'STD';
+      const sizeCode = sizeVal.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || 'FS';
+      cleanSku = `${prefix}-${colCode}-${sizeCode}`;
+    }
+
+    // Ensure unique SKU
+    let candidateSku = cleanSku;
+    let counter = 1;
+    while (true) {
+      const check = await query('SELECT 1 FROM variants WHERE sku = $1', [candidateSku]);
+      if (check.rows.length === 0) break;
+      candidateSku = `${cleanSku}-${counter++}`;
+    }
+
+    await query(`
+      INSERT INTO variants (product_id, sku, size, colour, on_hand, reserved, reorder_level, image_url)
+      VALUES ($1, $2, $3, $4, $5, 0, $6, $7);
+    `, [prodIdNum, candidateSku, sizeVal, colourVal, onHandNum, reorderNum, imageUrl]);
+
+    const sep = redirectTarget.includes('?') ? '&' : '?';
+    res.redirect(`${redirectTarget}${sep}flash=${encodeURIComponent(`Variant SKU "${candidateSku}" successfully created with ${onHandNum} on-hand stock.`)}`);
   } catch (err) {
-    res.redirect(`/stock?error=${encodeURIComponent(err.message)}`);
+    const sep = redirectTarget.includes('?') ? '&' : '?';
+    res.redirect(`${redirectTarget}${sep}error=${encodeURIComponent(err.message)}`);
+  }
+});
+
+// Standalone Photo Upload for Variant / Colour
+router.post('/variants/:id/upload-image', requireRole('owner', 'stock_adder'), upload.single('image'), async (req, res) => {
+  const redirectTarget = req.headers.referer || '/stock';
+  try {
+    const vId = parseInt(req.params.id, 10);
+    const { apply_to_color, remove_image, manual_image_url } = req.body;
+
+    const cur = await query(`
+      SELECT v.id, v.product_id, v.sku, v.colour, p.name AS product_name
+      FROM variants v
+      JOIN products p ON p.id = v.product_id
+      WHERE v.id = $1
+    `, [vId]);
+    if (!cur.rows.length) throw new Error('Variant not found.');
+    const v = cur.rows[0];
+
+    let finalImageUrl = null;
+    if (remove_image === '1') {
+      finalImageUrl = null;
+    } else if (req.file) {
+      finalImageUrl = `/products/${req.file.filename}`;
+    } else if (manual_image_url && manual_image_url.trim()) {
+      finalImageUrl = manual_image_url.trim();
+    } else {
+      throw new Error('Please select an image file to upload or enter an image URL.');
+    }
+
+    if (apply_to_color === '1' && v.colour && v.colour.trim()) {
+      await query(`
+        UPDATE variants
+        SET image_url = $1
+        WHERE product_id = $2 AND LOWER(TRIM(colour)) = LOWER(TRIM($3));
+      `, [finalImageUrl, v.product_id, v.colour]);
+    } else {
+      await query(`
+        UPDATE variants
+        SET image_url = $1
+        WHERE id = $2;
+      `, [finalImageUrl, vId]);
+    }
+
+    const flashMsg = finalImageUrl
+      ? `Photo updated for ${apply_to_color === '1' && v.colour ? `colour "${v.colour}" (${v.product_name})` : `SKU ${v.sku}`}.`
+      : `Photo removed for ${apply_to_color === '1' && v.colour ? `colour "${v.colour}"` : `SKU ${v.sku}`}.`;
+
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return res.json({ success: true, image_url: finalImageUrl });
+    }
+    const sep = redirectTarget.includes('?') ? '&' : '?';
+    res.redirect(`${redirectTarget}${sep}flash=${encodeURIComponent(flashMsg)}`);
+  } catch (err) {
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return res.status(500).json({ error: err.message });
+    }
+    const sep = redirectTarget.includes('?') ? '&' : '?';
+    res.redirect(`${redirectTarget}${sep}error=${encodeURIComponent(err.message)}`);
   }
 });
 

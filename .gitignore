@@ -1,12 +1,18 @@
 # Dependencies
 node_modules/
 */node_modules/
+**/node_modules/
+
+# Media and testing uploads
+media-uploads/*
+!media-uploads/.gitkeep
 
 # Secrets and environment configs
 .env
 .env.bkup
 *.env
 *.env.*
+!.env.example
 
 # Logs
 *.log

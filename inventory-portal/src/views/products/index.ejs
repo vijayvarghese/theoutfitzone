@@ -17,9 +17,9 @@
 
     <!-- Status Filter -->
     <select name="status" class="form-select" onchange="this.form.submit()">
+      <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All Statuses</option>
       <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Active Silhouettes</option>
       <option value="archived" <%= filters.status === 'archived' ? 'selected' : '' %>>Archived Silhouettes</option>
-      <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All Statuses</option>
     </select>
 
     <!-- Image Status Filter -->
@@ -154,23 +154,26 @@
               </div>
             </td>
 
-            <!-- Active Toggle -->
+            <!-- Active Status & Toggle -->
             <td>
-              <% if (typeof canManageCatalog !== 'undefined' && canManageCatalog) { %>
-                <form method="POST" action="/products/<%= p.id %>/toggle-status" style="margin: 0;">
-                  <button
-                    type="submit"
-                    class="btn btn-xs <%= p.active ? 'btn-secondary' : 'btn-primary' %>"
-                    title="Toggle active status"
-                  >
-                    <%= p.active ? 'Active' : 'Archived' %>
-                  </button>
-                </form>
-              <% } else { %>
+              <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
                 <span class="badge <%= p.active ? 'badge-success' : 'badge-neutral' %>" style="font-size: 11px;">
-                  <%= p.active ? 'Active' : 'Archived' %>
+                  <%= p.active ? '● Active' : '○ Archived' %>
                 </span>
-              <% } %>
+                <% if (typeof canManageCatalog !== 'undefined' && canManageCatalog) { %>
+                  <form method="POST" action="/products/<%= p.id %>/toggle-status" style="margin: 0;">
+                    <button
+                      type="submit"
+                      class="btn btn-xs <%= p.active ? 'btn-outline-danger' : 'btn-outline-success' %>"
+                      style="font-size: 10px; padding: 2px 6px;"
+                      title="<%= p.active ? 'Hide from customer storefront' : 'Make visible on customer storefront' %>"
+                      onclick="return confirm('Change status for <%= p.name %> to <%= p.active ? 'Archived (hidden from storefront)' : 'Active (visible on storefront)' %>?');"
+                    >
+                      <%= p.active ? 'Hide' : 'Activate' %>
+                    </button>
+                  </form>
+                <% } %>
+              </div>
             </td>
 
             <!-- Actions -->

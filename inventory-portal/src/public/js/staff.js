@@ -13,19 +13,29 @@ document.addEventListener('DOMContentLoaded', () => {
       if (firstInput) setTimeout(() => firstInput.focus(), 50);
     }
   };
+  window.openModal = openModal;
 
   const closeModal = (modal) => {
+    if (typeof modal === 'string') modal = document.getElementById(modal);
     if (modal) {
       modal.classList.remove('is-active');
-      document.body.style.overflow = '';
+      if (!document.querySelector('.modal-overlay.is-active')) {
+        document.body.style.overflow = '';
+      }
     }
   };
+  window.closeModal = closeModal;
 
   // Triggers to open modals
   document.querySelectorAll('[data-modal-target]').forEach(trigger => {
     trigger.addEventListener('click', (e) => {
       e.preventDefault();
       const targetId = trigger.getAttribute('data-modal-target');
+      const prodId = trigger.getAttribute('data-product-id');
+      if (prodId && targetId === 'modal-add-variant') {
+        const sel = document.getElementById('modal-add-variant-product');
+        if (sel) sel.value = prodId;
+      }
       openModal(targetId);
     });
   });
@@ -134,6 +144,57 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // 4b. Pre-fill Variant / Colour Photo Upload Modal
+  document.querySelectorAll('.btn-open-variant-image-modal').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const vId = btn.dataset.variantId;
+      const pName = btn.dataset.productName || 'Silhouette';
+      const sku = btn.dataset.sku || '';
+      const size = btn.dataset.size || '-';
+      const colour = btn.dataset.colour || 'Standard';
+      const curImg = btn.dataset.imageUrl || '';
+
+      const modal = document.getElementById('modal-upload-variant-image');
+      if (!modal) return;
+
+      const form = modal.querySelector('form');
+      if (form) form.action = `/stock/variants/${vId}/upload-image`;
+
+      const pNameEl = modal.querySelector('#modal-var-product-name');
+      if (pNameEl) pNameEl.textContent = pName;
+      const skuEl = modal.querySelector('#modal-var-sku');
+      if (skuEl) skuEl.textContent = sku;
+      const sizeEl = modal.querySelector('#modal-var-size');
+      if (sizeEl) sizeEl.textContent = size;
+      const colourEl = modal.querySelector('#modal-var-colour');
+      if (colourEl) colourEl.textContent = colour;
+      const colourLabelEl = modal.querySelector('#modal-var-colour-label');
+      if (colourLabelEl) colourLabelEl.textContent = colour;
+
+      const manualInput = modal.querySelector('#modal-var-manual-url');
+      if (manualInput) manualInput.value = '';
+
+      const curImgElem = modal.querySelector('#modal-var-image-current');
+      const placeholderElem = modal.querySelector('#modal-var-image-placeholder');
+      const removeGroup = modal.querySelector('#modal-var-remove-group');
+
+      if (curImg && curImg.trim()) {
+        if (curImgElem) {
+          curImgElem.src = curImg;
+          curImgElem.style.display = 'block';
+        }
+        if (placeholderElem) placeholderElem.style.display = 'none';
+        if (removeGroup) removeGroup.style.display = 'block';
+      } else {
+        if (curImgElem) curImgElem.style.display = 'none';
+        if (placeholderElem) placeholderElem.style.display = 'flex';
+        if (removeGroup) removeGroup.style.display = 'none';
+      }
+
+      openModal('modal-upload-variant-image');
+    });
+  });
+
   // 5. Drag-and-Drop Image Preview Handler
   document.querySelectorAll('.dropzone').forEach(dropzone => {
     const fileInput = dropzone.querySelector('input[type="file"]');
@@ -188,17 +249,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // 6. Dynamic Variant Rows Generator for Add Product Page
   const btnAddVarRow = document.getElementById('btn-add-var-row');
   const varRowContainer = document.getElementById('initial-variants-container');
+  const prodNameInput = document.getElementById('name');
+
+  const defaultSizes = ['M', 'L', 'XL', 'S', 'XXL', 'XS'];
+
   if (btnAddVarRow && varRowContainer) {
     btnAddVarRow.addEventListener('click', () => {
-      const idx = varRowContainer.querySelectorAll('.variant-builder-row').length + 1;
+      const rowCount = varRowContainer.querySelectorAll('.variant-builder-row').length;
+      const nextSize = defaultSizes[rowCount % defaultSizes.length] || 'Free Size';
       const row = document.createElement('div');
       row.className = 'variant-builder-row';
       row.style.cssText = 'display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; align-items: center;';
       row.innerHTML = `
-        <input type="text" name="var_sku" class="form-input" placeholder="e.g. SILK-BLU-L" style="font-family: var(--font-mono); text-transform: uppercase;">
-        <input type="text" name="var_size" class="form-input" placeholder="Size (L)">
-        <input type="text" name="var_colour" class="form-input" placeholder="Colour">
-        <input type="number" name="var_stock" class="form-input" value="0" min="0">
+        <input type="text" name="var_sku" class="form-input var-sku-input" placeholder="Auto-generated if empty" style="font-family: var(--font-mono); text-transform: uppercase;">
+        <input type="text" name="var_size" class="form-input var-size-input" value="${nextSize}" placeholder="Size">
+        <input type="text" name="var_colour" class="form-input var-colour-input" value="Standard" placeholder="Colour">
+        <input type="number" name="var_stock" class="form-input" value="10" min="0">
         <input type="number" name="var_reorder" class="form-input" value="2" min="0">
         <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" style="padding: 0; width: 34px; height: 38px;" title="Remove row">✕</button>
       `;

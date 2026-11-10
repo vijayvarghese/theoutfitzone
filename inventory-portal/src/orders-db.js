@@ -75,7 +75,7 @@ export async function listOrders({ status, channel, q, limit = 25, offset = 0 } 
 
   const queryText = `
     SELECT o.id, o.order_no, o.status, o.channel, o.payment_mode, o.payment_status,
-           o.payment_ref, o.subtotal, o.shipping, o.total, o.courier, o.awb,
+           o.payment_ref, o.subtotal, o.shipping, o.discount, o.total, o.coupon_code, o.courier, o.awb,
            o.created_at, o.updated_at,
            c.name AS customer_name, c.phone AS customer_phone, c.email AS customer_email,
            (SELECT COALESCE(SUM(qty), 0) FROM order_items oi WHERE oi.order_id = o.id) AS items_count
@@ -156,7 +156,9 @@ export async function getOrder(orderNo) {
     payment_ref: r.payment_ref,
     subtotal: Number(r.subtotal),
     shipping: Number(r.shipping),
+    discount: Number(r.discount || 0),
     total: Number(r.total),
+    coupon_code: r.coupon_code || null,
     ship_address: r.ship_address || r.customer_address,
     ship_pincode: r.ship_pincode || r.customer_pincode,
     courier: r.courier,

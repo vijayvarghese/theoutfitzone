@@ -8,40 +8,80 @@
 
     <!-- Live Drawer Items Body -->
     <div class="drawer-body">
-      <div class="drawer-empty-state">
-        <p class="font-serif" style="font-size: 1.25rem; margin-bottom: 8px;">Your bag is currently empty.</p>
-        <p style="font-size: 0.85rem; margin-bottom: 20px;">Explore our handcrafted silhouettes and discover your perfect fit.</p>
-        <a href="/shop" class="btn btn-secondary btn-sm cart-close-trigger">Explore Collection</a>
-      </div>
+      <% if (typeof cart !== 'undefined' && cart && cart.items && cart.items.length > 0) { %>
+        <% cart.items.forEach(it => { %>
+          <div class="drawer-item" data-sku="<%= it.sku %>">
+            <div class="drawer-item-img-wrap">
+              <% if (it.image_url) { %>
+                <img src="<%= it.image_url %>" alt="<%= it.product %>" style="width: 64px; height: 80px; object-fit: cover; border-radius: var(--radius-xs);">
+              <% } else { %>
+                <div class="product-placeholder" style="width: 64px; height: 80px; font-size: 1rem;">
+                  <span class="placeholder-initials" style="font-size: 1.2rem;"><%= it.size %></span>
+                </div>
+              <% } %>
+            </div>
+            <div class="drawer-item-details">
+              <div>
+                <div class="drawer-item-name"><%= it.product %></div>
+                <div class="drawer-item-meta"><%= it.size %> / <%= it.colour %></div>
+              </div>
+              <div class="drawer-item-actions">
+                <div class="qty-stepper">
+                  <button type="button" class="qty-btn qty-step-btn" data-sku="<%= it.sku %>" data-qty="<%= it.qty %>" data-delta="-1" aria-label="Decrease quantity">−</button>
+                  <span class="qty-val"><%= it.qty %></span>
+                  <button type="button" class="qty-btn qty-step-btn" data-sku="<%= it.sku %>" data-qty="<%= it.qty %>" data-delta="1" <%= it.qty >= it.available ? 'disabled' : '' %> aria-label="Increase quantity">+</button>
+                </div>
+                <div class="drawer-item-price"><%= formatInr(it.price_inr * it.qty) %></div>
+                <button type="button" class="drawer-item-remove" data-sku="<%= it.sku %>" aria-label="Remove item">Remove</button>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="drawer-empty-state">
+          <p class="font-serif" style="font-size: 1.25rem; margin-bottom: 8px;">Your bag is currently empty.</p>
+          <p style="font-size: 0.85rem; margin-bottom: 20px;">Explore our handcrafted silhouettes and discover your perfect fit.</p>
+          <a href="/shop" class="btn btn-secondary btn-sm">Explore Collection</a>
+        </div>
+      <% } %>
     </div>
 
     <!-- Sticky Drawer Footer -->
-    <div class="drawer-footer" style="display: none;">
+    <% const hasItems = (typeof cart !== 'undefined' && cart && cart.items && cart.items.length > 0); %>
+    <div class="drawer-footer" style="<%= hasItems ? 'display: flex;' : 'display: none;' %>">
       <div class="drawer-shipping-notice">
-        Complimentary domestic delivery on orders over <%= formatInr(config.freeShippingAbove) %>
+        <% if (hasItems && cart.shipping === 0) { %>
+          ✨ You qualify for complimentary domestic delivery!
+        <% } else if (hasItems) { %>
+          Add <%= formatInr(cart.freeShippingDelta) %> more for complimentary delivery.
+        <% } else { %>
+          Complimentary domestic delivery on orders over <%= formatInr(config.freeShippingAbove) %>
+        <% } %>
       </div>
 
       <div class="drawer-row">
         <span>Subtotal</span>
-        <span class="drawer-subtotal-val">₹0</span>
+        <span class="drawer-subtotal-val"><%= formatInr(hasItems ? cart.subtotal : 0) %></span>
       </div>
 
       <div class="drawer-row">
         <span>Estimated Shipping</span>
-        <span class="drawer-shipping-val"><%= formatInr(config.shippingFlat) %></span>
+        <span class="drawer-shipping-val"><%= (hasItems && cart.shipping === 0) ? 'Free' : formatInr(hasItems ? cart.shipping : config.shippingFlat) %></span>
       </div>
 
       <div class="drawer-row drawer-row-total">
         <span>Total (INR)</span>
-        <span class="drawer-total-val">₹0</span>
+        <span class="drawer-total-val"><%= formatInr(hasItems ? cart.total : 0) %></span>
       </div>
 
-      <a href="/checkout" class="btn btn-primary btn-block" style="margin-top: 8px;">
-        Proceed to Checkout
-      </a>
-      <a href="/cart" class="btn btn-secondary btn-sm btn-block cart-close-trigger" style="text-align: center;">
-        View Full Bag
-      </a>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+        <a href="/cart" class="btn btn-secondary btn-block" style="text-align: center;">
+          Go to Bag
+        </a>
+        <a href="/checkout" class="btn btn-primary btn-block" style="text-align: center;">
+          Go to Checkout
+        </a>
+      </div>
     </div>
   </aside>
 </div>

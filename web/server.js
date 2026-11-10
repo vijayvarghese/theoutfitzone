@@ -12,6 +12,7 @@ const cookieSession = require('cookie-session');
 // Loading config validates required environment variables and fails fast at startup
 const config = require('./src/config');
 const { csrfMiddleware, verifyCsrf } = require('./src/security');
+const cart = require('./src/cart');
 const storeRouter = require('./src/routes/store');
 const adminRouter = require('./src/routes/admin');
 
@@ -130,10 +131,22 @@ app.use('/vendor/@fontsource/inter', express.static(path.join(__dirname, 'node_m
 
 // Global middleware for CSRF and session locals
 app.use(csrfMiddleware);
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   res.locals.currentPath = req.path;
-  const rawCart = (req.session && Array.isArray(req.session.cart)) ? req.session.cart : [];
-  res.locals.cartItemCount = rawCart.reduce((acc, it) => acc + (parseInt(it.qty, 10) || 0), 0);
+  try {
+    const rawCart = (req.session && Array.isArray(req.session.cart)) ? req.session.cart : [];
+    if (rawCart.length > 0) {
+      const cartState = await cart.syncCart(req);
+      res.locals.cart = cartState;
+      res.locals.cartItemCount = cartState.itemCount;
+    } else {
+      res.locals.cart = { items: [], itemCount: 0, subtotal: 0, shipping: 0, total: 0, freeShippingDelta: config.freeShippingAbove, isFreeShipping: true };
+      res.locals.cartItemCount = 0;
+    }
+  } catch (err) {
+    res.locals.cart = { items: [], itemCount: 0, subtotal: 0, shipping: 0, total: 0, freeShippingDelta: config.freeShippingAbove, isFreeShipping: true };
+    res.locals.cartItemCount = 0;
+  }
   next();
 });
 

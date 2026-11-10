@@ -182,7 +182,7 @@
         <!-- Submit Button -->
         <div style="margin-top: var(--space-xl);">
           <button type="submit" class="btn btn-primary btn-block" style="min-height: 48px;">
-            Place Order (<%= formatInr(cart.total) %>) &rarr;
+            Place Order (<%= formatInr(grandTotal) %>) &rarr;
           </button>
         </div>
       </form>
@@ -220,9 +220,68 @@
         <span><%= cart.shipping === 0 ? 'Complimentary' : formatInr(cart.shipping) %></span>
       </div>
 
+      <!-- Coupon / Promo Code Section -->
+      <div style="border-top: 1px dashed var(--color-border); border-bottom: 1px dashed var(--color-border); padding: var(--space-sm) 0;">
+        <% if (couponNotice) { %>
+          <div style="font-size: var(--text-xs); color: #dc2626; margin-bottom: var(--space-xs); font-weight: 500;">
+            <%= couponNotice %>
+          </div>
+        <% } %>
+        <% if (couponSuccess) { %>
+          <div style="font-size: var(--text-xs); color: #15803d; margin-bottom: var(--space-xs); font-weight: 500;">
+            <%= couponSuccess %>
+          </div>
+        <% } %>
+
+        <% if (coupon) { %>
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.3); border-radius: var(--radius-xs); padding: 8px 10px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: 700; font-size: var(--text-xs); letter-spacing: 0.05em; color: #166534; font-family: monospace;">
+                  🏷️ <%= coupon.code %>
+                </span>
+                <span style="font-size: 0.7rem; background: #bbf7d0; color: #166534; padding: 1px 6px; border-radius: 9999px; font-weight: 600;">
+                  <%= coupon.discount_type === 'percent' ? coupon.discount_value + '% OFF' : '₹' + coupon.discount_value + ' OFF' %>
+                </span>
+              </div>
+              <% if (coupon.description) { %>
+                <div style="font-size: 0.7rem; color: #15803d; margin-top: 2px;"><%= coupon.description %></div>
+              <% } %>
+            </div>
+            <form method="POST" action="/checkout/remove-coupon" style="margin: 0;">
+              <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+              <button type="submit" class="btn" style="padding: 2px 8px; font-size: 0.75rem; color: #991b1b; background: transparent; border: 1px solid #fca5a5; border-radius: var(--radius-xs); cursor: pointer;" title="Remove coupon">
+                ✕ Remove
+              </button>
+            </form>
+          </div>
+        <% } else { %>
+          <form method="POST" action="/checkout/apply-coupon" style="display: flex; gap: var(--space-xs);">
+            <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+            <input
+              type="text"
+              name="code"
+              placeholder="Promo / Coupon code"
+              style="flex: 1; text-transform: uppercase; padding: 7px 10px; font-size: var(--text-xs); font-family: monospace; border: 1px solid var(--color-border); border-radius: var(--radius-xs); background: var(--color-bg);"
+              required
+            />
+            <button type="submit" class="btn btn-secondary" style="padding: 7px 14px; font-size: var(--text-xs); white-space: nowrap;">
+              Apply
+            </button>
+          </form>
+        <% } %>
+      </div>
+
+      <% if (coupon && discount > 0) { %>
+        <div style="display: flex; justify-content: space-between; font-size: var(--text-sm); color: #15803d; font-weight: 600;">
+          <span>Coupon Discount (<%= coupon.code %>)</span>
+          <span>- <%= formatInr(discount) %></span>
+        </div>
+      <% } %>
+
       <div style="border-top: 1px solid var(--color-border); padding-top: var(--space-sm); display: flex; justify-content: space-between; font-size: var(--text-md); font-weight: 700;">
         <span>Total Amount</span>
-        <span style="color: var(--color-oxblood);"><%= formatInr(cart.total) %></span>
+        <span style="color: var(--color-oxblood);"><%= formatInr(grandTotal) %></span>
       </div>
 
       <div style="font-size: var(--text-2xs); color: var(--color-brass-dark); line-height: 1.5; border-top: 1px solid var(--color-border); padding-top: var(--space-sm);">

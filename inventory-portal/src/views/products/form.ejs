@@ -100,9 +100,12 @@
 
       <!-- Section 3: Initial Variants Generator (Only on Add Product) -->
       <% if (!isEdit) { %>
-        <div style="font-weight: 600; font-size: 14px; margin: 28px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
-          <span>3. Initial Variant SKUs (Optional)</span>
+        <div style="font-weight: 600; font-size: 14px; margin: 28px 0 4px 0; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+          <span>3. Inventory Variants & Stock (At least 1 SKU required)</span>
           <button type="button" class="btn btn-secondary btn-xs" id="btn-add-var-row">+ Add Variant Row</button>
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+          Every purchasable silhouette requires at least one variant SKU with physical stock. Leave SKU empty to automatically generate standard codes.
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">
@@ -116,17 +119,17 @@
 
         <div id="initial-variants-container">
           <div class="variant-builder-row" style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; align-items: center;">
-            <input type="text" name="var_sku" class="form-input" placeholder="e.g. MSK-IVR-M" style="font-family: var(--font-mono); text-transform: uppercase;">
-            <input type="text" name="var_size" class="form-input" placeholder="M">
-            <input type="text" name="var_colour" class="form-input" placeholder="Ivory">
+            <input type="text" name="var_sku" class="form-input var-sku-input" placeholder="Auto-generated if empty" style="font-family: var(--font-mono); text-transform: uppercase;">
+            <input type="text" name="var_size" class="form-input var-size-input" value="M" placeholder="M">
+            <input type="text" name="var_colour" class="form-input var-colour-input" value="Standard" placeholder="Standard">
             <input type="number" name="var_stock" class="form-input" value="10" min="0">
             <input type="number" name="var_reorder" class="form-input" value="2" min="0">
             <button type="button" class="btn btn-sm btn-outline-danger" style="padding: 0; width: 34px; height: 38px;" onclick="this.closest('.variant-builder-row').remove()" title="Remove row">✕</button>
           </div>
           <div class="variant-builder-row" style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; align-items: center;">
-            <input type="text" name="var_sku" class="form-input" placeholder="e.g. MSK-IVR-L" style="font-family: var(--font-mono); text-transform: uppercase;">
-            <input type="text" name="var_size" class="form-input" placeholder="L">
-            <input type="text" name="var_colour" class="form-input" placeholder="Ivory">
+            <input type="text" name="var_sku" class="form-input var-sku-input" placeholder="Auto-generated if empty" style="font-family: var(--font-mono); text-transform: uppercase;">
+            <input type="text" name="var_size" class="form-input var-size-input" value="L" placeholder="L">
+            <input type="text" name="var_colour" class="form-input var-colour-input" value="Standard" placeholder="Standard">
             <input type="number" name="var_stock" class="form-input" value="10" min="0">
             <input type="number" name="var_reorder" class="form-input" value="2" min="0">
             <button type="button" class="btn btn-sm btn-outline-danger" style="padding: 0; width: 34px; height: 38px;" onclick="this.closest('.variant-builder-row').remove()" title="Remove row">✕</button>
@@ -134,14 +137,73 @@
         </div>
       <% } else if (variants && variants.length > 0) { %>
         <!-- If in Edit mode, display configured variants -->
-        <div style="font-weight: 600; font-size: 14px; margin: 28px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); color: var(--primary);">
-          3. Currently Configured Variants (<%= variants.length %> SKUs)
+        <div style="font-weight: 600; font-size: 14px; margin: 28px 0 12px 0; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+          <span>3. Currently Configured Variants & Colour Photography (<%= variants.length %> SKUs)</span>
+          <button type="button" class="btn btn-secondary btn-xs" data-modal-target="modal-add-variant" data-product-id="<%= product.id %>">+ Add SKU / Variant</button>
+        </div>
+
+        <%
+          const uniqueColours = {};
+          (variants || []).forEach(v => {
+            const col = (v.colour || 'Standard').trim();
+            if (!uniqueColours[col]) {
+              uniqueColours[col] = {
+                name: col,
+                image_url: v.image_url || null,
+                sampleVariantId: v.id,
+                sampleSku: v.sku,
+                count: 0
+              };
+            }
+            if (v.image_url && !uniqueColours[col].image_url) {
+              uniqueColours[col].image_url = v.image_url;
+            }
+            uniqueColours[col].count++;
+          });
+          const colourList = Object.values(uniqueColours);
+        %>
+
+        <!-- Colour Variant Photography Showcase Cards -->
+        <div style="margin-bottom: 20px;">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">
+            Colour Photography (Swapped automatically on storefront when customer picks a colour):
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+            <% colourList.forEach(c => { %>
+              <div style="background: #F9FAFB; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; display: flex; gap: 12px; align-items: center;">
+                <% if (c.image_url) { %>
+                  <img src="<%= c.image_url %>" alt="<%= c.name %>" style="width: 52px; height: 52px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">
+                <% } else if (product.image_url) { %>
+                  <img src="<%= product.image_url %>" alt="<%= c.name %>" style="width: 52px; height: 52px; object-fit: cover; border-radius: 4px; opacity: 0.6; border: 1px dashed var(--border-color);" title="Default silhouette photo fallback">
+                <% } else { %>
+                  <div class="prod-thumb-placeholder" style="width: 52px; height: 52px; font-size: 10px;">No Pic</div>
+                <% } %>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 600; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><%= c.name %></div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;"><%= c.count %> <%= c.count === 1 ? 'size' : 'sizes' %></div>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-xs btn-open-variant-image-modal"
+                    data-variant-id="<%= c.sampleVariantId %>"
+                    data-sku="<%= c.sampleSku %>"
+                    data-product-name="<%= product.name %>"
+                    data-colour="<%= c.name %>"
+                    data-image-url="<%= c.image_url || '' %>"
+                    style="font-size: 10.5px; padding: 2px 7px;"
+                  >
+                    📷 <%= c.image_url ? 'Change Photo' : 'Upload Photo' %>
+                  </button>
+                </div>
+              </div>
+            <% }) %>
+          </div>
         </div>
 
         <div class="table-responsive" style="margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
           <table class="portal-table">
             <thead>
               <tr>
+                <th style="width: 50px; text-align: center;">Photo</th>
                 <th>SKU</th>
                 <th>Size</th>
                 <th>Colour</th>
@@ -149,22 +211,60 @@
                 <th>Reserved</th>
                 <th>Available</th>
                 <th>Reorder</th>
+                <th style="width: 90px; text-align: right;">Photo</th>
               </tr>
             </thead>
             <tbody>
               <% variants.forEach(v => { %>
                 <tr>
+                  <td style="text-align: center;">
+                    <% if (v.image_url) { %>
+                      <img src="<%= v.image_url %>" alt="<%= v.sku %>" class="prod-thumb" style="width: 32px; height: 32px; border: 1.5px solid var(--primary);">
+                    <% } else if (product.image_url) { %>
+                      <img src="<%= product.image_url %>" alt="<%= v.sku %>" class="prod-thumb" style="width: 32px; height: 32px; opacity: 0.6;" title="Default silhouette photo fallback">
+                    <% } else { %>
+                      <div class="prod-thumb-placeholder" style="width: 32px; height: 32px; font-size: 9px;">-</div>
+                    <% } %>
+                  </td>
                   <td><span class="sku-tag"><%= v.sku %></span></td>
                   <td><%= v.size || '-' %></td>
-                  <td><%= v.colour || '-' %></td>
+                  <td><strong><%= v.colour || '-' %></strong></td>
                   <td><%= v.on_hand %></td>
                   <td><%= v.reserved %></td>
                   <td><strong style="color: var(--success);"><%= v.on_hand - v.reserved %></strong></td>
                   <td><%= v.reorder_level %></td>
+                  <td style="text-align: right;">
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-xs btn-open-variant-image-modal"
+                      data-variant-id="<%= v.id %>"
+                      data-sku="<%= v.sku %>"
+                      data-product-name="<%= product.name %>"
+                      data-size="<%= v.size || '' %>"
+                      data-colour="<%= v.colour || '' %>"
+                      data-image-url="<%= v.image_url || '' %>"
+                      title="Upload specific photo for this SKU"
+                    >
+                      📷
+                    </button>
+                  </td>
                 </tr>
               <% }) %>
             </tbody>
           </table>
+        </div>
+      <% } else { %>
+        <!-- In Edit mode but has zero variants -->
+        <div style="margin: 28px 0 16px 0; padding: 16px; background: var(--warning-bg); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--radius-sm);">
+          <div style="font-weight: 600; font-size: 14px; color: var(--warning-text); margin-bottom: 4px;">
+            ⚠️ No Variant SKUs Configured (Listed as Sold Out on Storefront)
+          </div>
+          <div style="font-size: 12px; color: var(--text-main); margin-bottom: 12px;">
+            This silhouette currently has 0 variants. Customers cannot purchase it and it appears as <strong>Sold Out</strong> on the customer website.
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" data-modal-target="modal-add-variant" data-product-id="<%= product.id %>">
+            + Add Initial Variant SKU & Stock
+          </button>
         </div>
       <% } %>
     </div>

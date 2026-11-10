@@ -160,6 +160,12 @@
         <span>Shipping</span>
         <span><%= order.shipping === 0 ? 'Complimentary' : formatInr(order.shipping) %></span>
       </div>
+      <% if (Number(order.discount) > 0) { %>
+        <div style="display: flex; justify-content: space-between; color: #15803d; font-weight: 600;">
+          <span>Coupon Discount <%= order.coupon_code ? '(' + order.coupon_code + ')' : '' %></span>
+          <span>- <%= formatInr(order.discount) %></span>
+        </div>
+      <% } %>
       <div style="display: flex; justify-content: space-between; font-size: var(--text-md); font-weight: 700; color: var(--color-oxblood); margin-top: 4px;">
         <span>Grand Total</span>
         <span><%= formatInr(order.total) %></span>

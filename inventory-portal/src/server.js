@@ -8,6 +8,7 @@ import productsRouter from './routes/products.js';
 import stockRouter from './routes/stock.js';
 import movementsRouter from './routes/movements.js';
 import ordersRouter from './routes/orders.js';
+import couponsRouter from './routes/coupons.js';
 import { authMiddleware } from './auth.js';
 import { uploadDir } from './upload.js';
 import { pool } from './db.js';
@@ -70,6 +71,21 @@ app.use((req, res, next) => {
   next();
 });
 
+// Provide all silhouettes to authenticated staff views for universal layout modals
+app.use(async (req, res, next) => {
+  if (req.user) {
+    try {
+      const prodRes = await pool.query('SELECT id, name, category, active FROM products ORDER BY name ASC');
+      res.locals.allProductList = prodRes.rows;
+    } catch {
+      res.locals.allProductList = [];
+    }
+  } else {
+    res.locals.allProductList = [];
+  }
+  next();
+});
+
 // Automatic Layout Wrapper middleware
 app.use((req, res, next) => {
   const originalRender = res.render.bind(res);
@@ -117,6 +133,7 @@ app.use('/products', productsRouter);
 app.use('/products', express.static(uploadDir, { redirect: false, maxAge: '1d' }));
 app.use('/stock', stockRouter);
 app.use('/movements', movementsRouter);
+app.use('/coupons', couponsRouter);
 
 // 404 handler
 app.use((req, res) => {

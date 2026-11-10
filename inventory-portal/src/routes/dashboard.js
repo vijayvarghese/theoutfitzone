@@ -104,6 +104,32 @@ router.get('/', async (req, res, next) => {
       recentOrders = recentOrdersRes.rows;
     }
 
+    // 7. Coupon & Promotion Budget Metrics
+    let couponMetrics = null;
+    try {
+      const coupRes = await query(`
+        SELECT
+          COUNT(*) FILTER (WHERE active = true AND (expires_at IS NULL OR expires_at > now())) AS active_coupons,
+          COALESCE(SUM(usage_count), 0) AS total_redemptions
+        FROM coupons;
+      `);
+      const coupDiscountRes = await query(`
+        SELECT
+          COALESCE(SUM(discount), 0) AS total_discount_given,
+          COUNT(*) FILTER (WHERE coupon_code IS NOT NULL) AS discounted_orders
+        FROM orders
+        WHERE status NOT IN ('CANCELLED', 'REFUNDED');
+      `);
+      couponMetrics = {
+        activeCoupons: parseInt(coupRes.rows[0].active_coupons || '0', 10),
+        totalRedemptions: parseInt(coupRes.rows[0].total_redemptions || '0', 10),
+        totalDiscountGiven: parseFloat(coupDiscountRes.rows[0].total_discount_given || '0'),
+        discountedOrders: parseInt(coupDiscountRes.rows[0].discounted_orders || '0', 10)
+      };
+    } catch {
+      couponMetrics = { activeCoupons: 0, totalRedemptions: 0, totalDiscountGiven: 0, discountedOrders: 0 };
+    }
+
     res.render('dashboard', {
       title: 'Staff Operations & Inventory Dashboard',
       currentPath: '/',
@@ -113,7 +139,8 @@ router.get('/', async (req, res, next) => {
       categories: categoryRes.rows,
       products: prodRes.rows,
       orderMetrics,
-      recentOrders
+      recentOrders,
+      couponMetrics
     });
   } catch (err) {
     next(err);

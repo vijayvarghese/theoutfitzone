@@ -87,6 +87,9 @@ export function openCartDrawer() {
 
   const closeBtn = backdrop.querySelector('.drawer-close-btn');
   if (closeBtn) closeBtn.focus();
+
+  // Ensure cart items and totals are fresh whenever drawer opens
+  import('./cart.js').then(m => m.fetchAndRenderCart?.()).catch(() => {});
 }
 
 export function closeCartDrawer() {
@@ -111,6 +114,10 @@ function initCartDrawerEvents() {
 
   closeTriggers.forEach(btn => {
     btn.addEventListener('click', (e) => {
+      if (btn.tagName === 'A' && btn.getAttribute('href')) {
+        closeCartDrawer();
+        return;
+      }
       e.preventDefault();
       closeCartDrawer();
     });
@@ -274,6 +281,15 @@ function initOrderPage() {
   }
 }
 
+// 7. Shop Collection Sort Control
+function initSortControl() {
+  const sortSelect = document.querySelector('.sort-select');
+  if (!sortSelect) return;
+  sortSelect.addEventListener('change', () => {
+    sortSelect.closest('form')?.submit();
+  });
+}
+
 function initApp() {
   if (window.__atelierAppInitialized) return;
   window.__atelierAppInitialized = true;
@@ -285,6 +301,7 @@ function initApp() {
   initMobileMenu();
   initContactForm();
   initOrderPage();
+  initSortControl();
 }
 
 // DOM Ready initialization (handles deferred scripts where DOM is already loaded)

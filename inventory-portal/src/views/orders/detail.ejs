@@ -218,6 +218,12 @@
           <span>Delivery / Shipping</span>
           <span style="font-weight: 600; color: var(--text-main);"><%= formatInr(order.shipping) %></span>
         </div>
+        <% if (Number(order.discount) > 0) { %>
+          <div style="display: flex; justify-content: space-between; font-size: 13px; color: #059669;">
+            <span>Coupon Discount <%= order.coupon_code ? '(' + order.coupon_code + ')' : '' %></span>
+            <span style="font-weight: 600;">- <%= formatInr(order.discount) %></span>
+          </div>
+        <% } %>
         <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; color: #111827; border-top: 1px solid var(--border-color); padding-top: 8px;">
           <span>Grand Total</span>
           <span style="color: #4F46E5;"><%= formatInr(order.total) %></span>

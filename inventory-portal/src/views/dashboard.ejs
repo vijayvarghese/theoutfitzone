@@ -90,6 +90,22 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
     </div>
   </div>
+
+  <% if (typeof isOwner !== 'undefined' && isOwner && typeof couponMetrics !== 'undefined' && couponMetrics) { %>
+    <div class="kpi-card" style="border-left: 3px solid #8B5CF6;">
+      <div>
+        <div class="kpi-label">Coupon Budget Utilized</div>
+        <div class="kpi-value" style="color: #6D28D9;"><%= formatInr(couponMetrics.totalDiscountGiven) %></div>
+        <div class="kpi-sub"><%= couponMetrics.totalRedemptions %> redemptions &bull; <a href="/coupons" style="color: #6D28D9; text-decoration: underline;"><%= couponMetrics.activeCoupons %> active promo codes &rarr;</a></div>
+      </div>
+      <div class="kpi-icon" style="background: #EDE9FE; color: #7C3AED;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+          <line x1="7" y1="7" x2="7.01" y2="7"></line>
+        </svg>
+      </div>
+    </div>
+  <% } %>
 </div>
 
 <!-- Main 2-Column Split -->
@@ -235,59 +251,5 @@
         <% }) %>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- Modal: Add New Variant SKU -->
-<div class="modal-overlay" id="modal-add-variant">
-  <div class="modal-content">
-    <form method="POST" action="/stock/variants">
-      <div class="modal-header">
-        <h2 class="modal-title">Add Variant SKU to Silhouette</h2>
-        <button type="button" class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Parent Silhouette / Product</label>
-          <select name="product_id" class="form-select" style="width: 100%;" required>
-            <option value="">-- Choose Silhouette --</option>
-            <% (products || []).forEach(p => { %>
-              <option value="<%= p.id %>">#<%= p.id %> - <%= p.name %></option>
-            <% }) %>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Variant SKU (Unique)</label>
-          <input type="text" name="sku" class="form-input" style="width: 100%; font-family: var(--font-mono); text-transform: uppercase;" placeholder="e.g. MSK-IVR-XXL" required>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div class="form-group">
-            <label class="form-label">Size</label>
-            <input type="text" name="size" class="form-input" style="width: 100%;" placeholder="e.g. S, M, L, Free Size">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Colour</label>
-            <input type="text" name="colour" class="form-input" style="width: 100%;" placeholder="e.g. Ivory, Sage Green">
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div class="form-group">
-            <label class="form-label">Initial Physical On-Hand</label>
-            <input type="number" name="on_hand" class="form-input" style="width: 100%;" value="0" min="0">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Reorder Level Threshold</label>
-            <input type="number" name="reorder_level" class="form-input" style="width: 100%;" value="2" min="0">
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
-        <button type="submit" class="btn btn-primary">Create Variant &rarr;</button>
-      </div>
-    </form>
   </div>
 </div>

@@ -24,22 +24,29 @@
     </style>
 
     <!-- Product Media -->
-    <div style="position: relative; background-color: var(--color-bg-alt); border: 1px solid var(--color-border); aspect-ratio: 3 / 4; overflow: hidden; border-radius: var(--radius-xs);">
-      <% if (isSoldOut) { %>
-        <span class="card-badge card-badge-soldout">Sold Out</span>
-      <% } else if (isLowStock) { %>
-        <span class="card-badge card-badge-lowstock">Only <%= totalAvailable %> left</span>
-      <% } %>
+    <%
+      const initialVariantImage = (firstAvailableVariant && firstAvailableVariant.image_url) ? firstAvailableVariant.image_url : null;
+      const initialDisplayImage = initialVariantImage || (product.image_url && product.image_url.trim() ? product.image_url : null);
+    %>
+    <div style="position: relative; background-color: var(--color-bg-alt); border: 1px solid var(--color-border); aspect-ratio: 3 / 4; overflow: hidden; border-radius: var(--radius-xs);" id="main-media-container" data-product-image="<%= (product.image_url && product.image_url.trim()) ? product.image_url : '' %>" data-initials="<%= getInitials(product.name) %>">
+      <span class="card-badge <%= isSoldOut ? 'card-badge-soldout' : (isLowStock ? 'card-badge-lowstock' : '') %>" id="main-stock-badge" style="<%= (!isSoldOut && !isLowStock) ? 'display: none;' : '' %>">
+        <%= isSoldOut ? 'Sold Out' : (isLowStock ? 'Only ' + totalAvailable + ' left' : '') %>
+      </span>
 
-      <% if (product.image_url && product.image_url.trim()) { %>
+      <% if (initialDisplayImage) { %>
         <img
-          src="<%= product.image_url %>"
+          id="main-product-img"
+          src="<%= initialDisplayImage %>"
           alt="<%= product.name %>"
-          style="width: 100%; height: 100%; object-fit: cover;"
-          onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'product-placeholder\'><span class=\'placeholder-initials\'><%= getInitials(product.name) %></span><span class=\'placeholder-tag\'>Aura & Thread</span></div>';"
+          style="width: 100%; height: 100%; object-fit: cover; transition: opacity 0.25s ease;"
+          onerror="this.onerror=null;this.style.display='none';document.getElementById('main-placeholder')?.removeAttribute('style');"
         />
+        <div class="product-placeholder" id="main-placeholder" style="display: none;">
+          <span class="placeholder-initials"><%= getInitials(product.name) %></span>
+          <span class="placeholder-tag">Aura & Thread Atelier</span>
+        </div>
       <% } else { %>
-        <div class="product-placeholder">
+        <div class="product-placeholder" id="main-placeholder">
           <span class="placeholder-initials"><%= getInitials(product.name) %></span>
           <span class="placeholder-tag">Aura & Thread Atelier</span>
         </div>
@@ -63,16 +70,70 @@
         <%= product.description %>
       </div>
 
-      <!-- Add to Bag Form (Works fully without JavaScript!) -->
-      <form method="POST" action="/cart/add" style="display: flex; flex-direction: column; gap: var(--space-md);">
+      <!-- Add to Bag Form -->
+      <form id="product-add-form" method="POST" action="/cart/add" style="display: flex; flex-direction: column; gap: var(--space-md);">
         <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+
+        <%
+          const coloursMap = {};
+          (product.variants || []).forEach(v => {
+            const colName = (v.colour || 'Standard').trim();
+            if (!coloursMap[colName]) {
+              coloursMap[colName] = {
+                name: colName,
+                image_url: v.image_url || null,
+                firstSku: v.sku,
+                available: v.available > 0
+              };
+            } else {
+              if (v.image_url && !coloursMap[colName].image_url) {
+                coloursMap[colName].image_url = v.image_url;
+              }
+              if (v.available > 0) coloursMap[colName].available = true;
+            }
+          });
+          const colourList = Object.values(coloursMap);
+        %>
+
+        <% if (colourList.length > 1) { %>
+          <div class="colour-selector-container">
+            <label class="variant-label" style="display: block; margin-bottom: 6px;">
+              Select Colour: <strong id="current-colour-name" style="color: var(--color-text); text-transform: none;"><%= firstAvailableVariant ? (firstAvailableVariant.colour || 'Standard') : 'Standard' %></strong>
+            </label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="colour-chips-group">
+              <% colourList.forEach(c => { %>
+                <button
+                  type="button"
+                  class="btn-colour-chip <%= (firstAvailableVariant && firstAvailableVariant.colour === c.name) ? 'is-active' : '' %>"
+                  data-colour="<%= c.name %>"
+                  data-image="<%= c.image_url || '' %>"
+                  style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: var(--text-xs); font-weight: 500; border: 1.5px solid <%= (firstAvailableVariant && firstAvailableVariant.colour === c.name) ? 'var(--color-oxblood)' : 'var(--color-border)' %>; border-radius: var(--radius-xs); background: <%= (firstAvailableVariant && firstAvailableVariant.colour === c.name) ? 'rgba(94, 27, 38, 0.08)' : 'var(--color-bg)' %>; color: var(--color-text); cursor: pointer; transition: all 0.2s;"
+                >
+                  <% if (c.image_url) { %>
+                    <img src="<%= c.image_url %>" alt="<%= c.name %>" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;">
+                  <% } %>
+                  <span><%= c.name %></span>
+                </button>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
 
         <!-- Variant Selector -->
         <div class="variant-group">
           <label for="variant-select" class="variant-label">Choose Size & Colour:</label>
           <select id="variant-select" name="sku" class="form-select" required>
             <% (product.variants || []).forEach(v => { %>
-              <option value="<%= v.sku %>" <%= v.available <= 0 ? 'disabled' : '' %> <%= v.sku === firstAvailableVariant?.sku ? 'selected' : '' %>>
+              <option
+                value="<%= v.sku %>"
+                data-sku="<%= v.sku %>"
+                data-size="<%= v.size || '' %>"
+                data-colour="<%= v.colour || '' %>"
+                data-image="<%= v.image_url || (coloursMap[(v.colour || '').trim()]?.image_url) || '' %>"
+                data-available="<%= v.available %>"
+                <%= v.available <= 0 ? 'disabled' : '' %>
+                <%= v.sku === firstAvailableVariant?.sku ? 'selected' : '' %>
+              >
                 <%= v.size %> — <%= v.colour %> (<%= v.available > 0 ? (v.available <= 3 ? 'Only ' + v.available + ' left' : 'In Stock') : 'Sold Out' %>)
               </option>
             <% }) %>
@@ -87,7 +148,7 @@
           </div>
 
           <div style="flex: 1; padding-top: 20px;">
-            <button type="submit" class="btn btn-primary btn-block" <%= isSoldOut ? 'disabled' : '' %>>
+            <button type="submit" id="product-submit-btn" class="btn btn-primary btn-block" <%= isSoldOut ? 'disabled' : '' %>>
               <%= isSoldOut ? 'Sold Out' : 'Add to Bag' %>
             </button>
           </div>
@@ -96,7 +157,8 @@
 
       <!-- WhatsApp Stylist Query Link -->
       <div style="margin-top: var(--space-sm);">
-        <a href="https://wa.me/<%= config.whatsappNumber %>?text=<%= encodeURIComponent('Hello Aura & Thread! I have a question about the ' + product.name + ' (SKU: ' + (firstAvailableVariant ? firstAvailableVariant.sku : '') + ').') %>"
+        <a id="whatsapp-inquiry-link"
+           href="https://wa.me/<%= config.whatsappNumber %>?text=<%= encodeURIComponent('Hello Aura & Thread! I have a question about the ' + product.name + ' (SKU: ' + (firstAvailableVariant ? firstAvailableVariant.sku : '') + ').') %>"
            target="_blank"
            rel="noopener noreferrer"
            class="btn btn-secondary btn-sm btn-block"

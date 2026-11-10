@@ -8,6 +8,27 @@ function formatInr(val) {
   return '₹' + Number(val || 0).toLocaleString('en-IN');
 }
 
+export async function fetchAndRenderCart() {
+  if (window.location.pathname === '/cart') return null;
+  try {
+    const res = await fetch('/cart/state', {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.success && data.cart) {
+      document.querySelectorAll('.cart-icon-badge').forEach(b => {
+        b.textContent = data.cart.itemCount;
+      });
+      renderDrawerCart(data.cart);
+      return data.cart;
+    }
+  } catch (err) {
+    console.debug('Could not fetch cart state:', err);
+  }
+  return null;
+}
+
 export function initCartController() {
   const drawerBody = document.querySelector('.drawer-body');
   const drawerFooter = document.querySelector('.drawer-footer');
@@ -48,6 +69,11 @@ export function initCartController() {
     const cart = e.detail;
     renderDrawerCart(cart);
   });
+
+  // Fetch live state on page load if cart drawer exists on this page
+  if (document.getElementById('cart-drawer-backdrop') && window.location.pathname !== '/cart') {
+    fetchAndRenderCart();
+  }
 }
 
 async function updateCartRequest(url, payload) {
@@ -85,7 +111,7 @@ async function updateCartRequest(url, payload) {
   }
 }
 
-function renderDrawerCart(cart) {
+export function renderDrawerCart(cart) {
   const body = document.querySelector('.drawer-body');
   const footer = document.querySelector('.drawer-footer');
   if (!body) return;
@@ -95,7 +121,7 @@ function renderDrawerCart(cart) {
       <div class="drawer-empty-state">
         <p class="font-serif" style="font-size: 1.25rem; margin-bottom: 8px;">Your bag is currently empty.</p>
         <p style="font-size: 0.85rem; margin-bottom: 20px;">Explore our handcrafted silhouettes and discover your perfect fit.</p>
-        <a href="/shop" class="btn btn-secondary btn-sm cart-close-trigger">Explore Collection</a>
+        <a href="/shop" class="btn btn-secondary btn-sm">Explore Collection</a>
       </div>
     `;
     if (footer) footer.style.display = 'none';
@@ -106,12 +132,14 @@ function renderDrawerCart(cart) {
 
   let itemsHtml = '';
   cart.items.forEach(it => {
+    const imgHtml = it.image_url
+      ? `<img src="${it.image_url}" alt="${it.product}" style="width: 64px; height: 80px; object-fit: cover; border-radius: var(--radius-xs);">`
+      : `<div class="product-placeholder" style="width: 64px; height: 80px; font-size: 1rem;"><span class="placeholder-initials" style="font-size: 1.2rem;">${it.size}</span></div>`;
+
     itemsHtml += `
       <div class="drawer-item" data-sku="${it.sku}">
         <div class="drawer-item-img-wrap">
-          <div class="product-placeholder" style="width: 64px; height: 80px; font-size: 1rem;">
-            <span class="placeholder-initials" style="font-size: 1.2rem;">${it.size}</span>
-          </div>
+          ${imgHtml}
         </div>
         <div class="drawer-item-details">
           <div>
@@ -122,7 +150,7 @@ function renderDrawerCart(cart) {
             <div class="qty-stepper">
               <button type="button" class="qty-btn qty-step-btn" data-sku="${it.sku}" data-qty="${it.qty}" data-delta="-1" aria-label="Decrease quantity">−</button>
               <span class="qty-val">${it.qty}</span>
-              <button type="button" class="qty-btn qty-step-btn" data-sku="${it.sku}" data-qty="${it.qty}" data-delta="1" aria-label="Increase quantity">+</button>
+              <button type="button" class="qty-btn qty-step-btn" data-sku="${it.sku}" data-qty="${it.qty}" data-delta="1" ${it.qty >= (it.available || 999) ? 'disabled' : ''} aria-label="Increase quantity">+</button>
             </div>
             <div class="drawer-item-price">${formatInr(it.price_inr * it.qty)}</div>
             <button type="button" class="drawer-item-remove" data-sku="${it.sku}" aria-label="Remove item">Remove</button>
@@ -146,9 +174,9 @@ function renderDrawerCart(cart) {
 
   if (noticeEl) {
     if (cart.shipping === 0) {
-      noticeEl.textContent = '✨ You have earned complimentary domestic shipping!';
+      noticeEl.textContent = '✨ You qualify for complimentary domestic delivery!';
     } else {
-      noticeEl.textContent = `Add ${formatInr(cart.freeShippingDelta)} more for complimentary shipping.`;
+      noticeEl.textContent = `Add ${formatInr(cart.freeShippingDelta)} more for complimentary delivery.`;
     }
   }
 }

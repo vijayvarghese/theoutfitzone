@@ -18,6 +18,7 @@ CREATE TABLE variants (
   sku           text NOT NULL UNIQUE,            -- e.g. KUR-RED-M
   size          text,
   colour        text,
+  image_url     text,
   on_hand       int  NOT NULL DEFAULT 0 CHECK (on_hand >= 0),
   reserved      int  NOT NULL DEFAULT 0 CHECK (reserved >= 0),   -- held for unpaid/unpacked orders (used by orders later)
   reorder_level int  NOT NULL DEFAULT 2,
@@ -69,7 +70,9 @@ SELECT v.id        AS variant_id,
        (v.on_hand - v.reserved)                  AS available,
        v.reorder_level,
        ((v.on_hand - v.reserved) <= v.reorder_level) AS low_stock,
-       p.active
+       p.active,
+       COALESCE(v.image_url, p.image_url)        AS image_url,
+       v.image_url                               AS variant_image_url
 FROM variants v
 JOIN products p ON p.id = v.product_id;
 
@@ -86,3 +89,22 @@ INSERT INTO variants (product_id, sku, size, colour, on_hand, reorder_level) VAL
   (2, 'MAX-FLO-S',  'S', 'Floral', 3, 2),
   (2, 'MAX-FLO-M',  'M', 'Floral', 5, 2),
   (3, 'JKT-DEN-L',  'L', 'Denim', 2, 1);
+
+CREATE TABLE IF NOT EXISTS coupons (
+  id serial PRIMARY KEY,
+  code text NOT NULL UNIQUE,
+  description text,
+  discount_type text NOT NULL DEFAULT 'percent' CHECK (discount_type IN ('percent', 'flat')),
+  discount_value numeric(10,2) NOT NULL CHECK (discount_value > 0),
+  min_order_amount numeric(10,2) NOT NULL DEFAULT 0 CHECK (min_order_amount >= 0),
+  scope text NOT NULL DEFAULT 'unlimited' CHECK (scope IN ('unlimited', 'custom', 'single_use')),
+  usage_limit integer CHECK (usage_limit IS NULL OR usage_limit > 0),
+  usage_count integer NOT NULL DEFAULT 0 CHECK (usage_count >= 0),
+  active boolean NOT NULL DEFAULT true,
+  expires_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS coupons_code_idx ON coupons (LOWER(code));
+CREATE INDEX IF NOT EXISTS coupons_active_idx ON coupons (active);

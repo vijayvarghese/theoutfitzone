@@ -80,6 +80,17 @@
           <span>Movement History</span>
         </a>
 
+        <% if (typeof isOwner !== 'undefined' && isOwner) { %>
+          <div class="nav-section-label">Management (Owner)</div>
+          <a href="/coupons" class="nav-link <%= currentPath.startsWith('/coupons') ? 'active' : '' %>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+            <span>Coupon Management</span>
+          </a>
+        <% } %>
+
         <div class="nav-section-label">External Services</div>
         <a href="http://localhost:8081" target="_blank" class="nav-link" style="color: #60A5FA;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -167,6 +178,66 @@
 
         <%- body %>
       </main>
+    </div>
+  </div>
+
+  <!-- Universal Modal: Add New Variant SKU -->
+  <div class="modal-overlay" id="modal-add-variant">
+    <div class="modal-content">
+      <form method="POST" action="/stock/variants" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h2 class="modal-title">Add Variant SKU to Silhouette</h2>
+          <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Parent Silhouette / Product</label>
+            <select name="product_id" id="modal-add-variant-product" class="form-select" style="width: 100%;" required>
+              <option value="">-- Choose Silhouette --</option>
+              <% (typeof allProductList !== 'undefined' ? allProductList : []).forEach(p => { %>
+                <option value="<%= p.id %>">#<%= p.id %> - <%= p.name %><%= !p.active ? ' (Archived)' : '' %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Variant SKU (Optional - Auto-generated if left blank)</label>
+            <input type="text" name="sku" class="form-input" style="width: 100%; font-family: var(--font-mono); text-transform: uppercase;" placeholder="e.g. MSK-IVR-XXL (Leave blank to auto-generate)">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Size</label>
+              <input type="text" name="size" class="form-input" style="width: 100%;" placeholder="e.g. S, M, L, Free Size" value="Free Size">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Colour</label>
+              <input type="text" name="colour" class="form-input" style="width: 100%;" placeholder="e.g. Ivory, Sage Green" value="Standard">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Colour Photo (Optional)</label>
+            <input type="file" name="image" class="form-input" accept="image/png, image/jpeg, image/webp, image/svg+xml, image/avif" style="width: 100%; font-size: 12px;">
+            <div class="form-hint">Displayed on the customer storefront when this colour is selected. Leave empty to use silhouette default.</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Initial Physical On-Hand</label>
+              <input type="number" name="on_hand" class="form-input" style="width: 100%;" value="10" min="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reorder Level Threshold</label>
+              <input type="number" name="reorder_level" class="form-input" style="width: 100%;" value="2" min="0">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Variant & Save Stock &rarr;</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -307,6 +378,77 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
           <button type="submit" class="btn btn-primary">Save Specifications</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Universal Modal: Upload Variant / Colour Photo -->
+  <div class="modal-overlay" id="modal-upload-variant-image">
+    <div class="modal-content">
+      <form method="POST" action="" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h2 class="modal-title">Colour & Variant Photography</h2>
+          <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="background: #F9FAFB; padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid var(--border-color); display: flex; gap: 14px; align-items: center;">
+            <img id="modal-var-image-current" src="" alt="Variant photo" style="width: 58px; height: 58px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color); display: none;">
+            <div id="modal-var-image-placeholder" class="prod-thumb-placeholder" style="width: 58px; height: 58px; font-size: 11px;">No Pic</div>
+            <div>
+              <div style="font-weight: 600; font-size: 13.5px; color: var(--text-main);" id="modal-var-product-name">-</div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
+                SKU: <strong id="modal-var-sku" class="sku-tag">-</strong> &bull; Size: <strong id="modal-var-size">-</strong> &bull; Colour: <strong id="modal-var-colour" style="color: var(--primary);">-</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Upload Colour Variant Photo</label>
+            <div class="dropzone">
+              <input type="file" name="image" accept="image/png, image/jpeg, image/webp, image/svg+xml, image/avif">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.75" style="margin: 0 auto 6px auto; display: block;">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <div style="font-weight: 600; font-size: 13px;">Drag and drop photo or click to browse</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">JPG, PNG, WebP up to 8MB. Served via Nginx to storefront when customer chooses this colour.</div>
+              <div class="dropzone-preview" style="display: none;">
+                <img class="preview-img" src="" alt="Upload preview">
+                <div style="text-align: left;">
+                  <div class="preview-name" style="font-weight: 600; font-size: 12px;"></div>
+                  <div style="font-size: 11px; color: var(--success-text);">Ready for upload</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Or External / Existing Image URL</label>
+            <input type="text" name="manual_image_url" id="modal-var-manual-url" class="form-input" style="width: 100%;" placeholder="/products/sample.jpg or https://...">
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+              <input type="checkbox" name="apply_to_color" value="1" checked>
+              <span><strong>Apply this photo to all sizes of colour "<span id="modal-var-colour-label">-</span>"</strong></span>
+            </label>
+            <div style="font-size: 11px; color: var(--text-muted); margin-left: 24px; margin-top: 2px;">
+              Recommended: When a customer clicks this colour on the website, this photo is displayed regardless of size selected.
+            </div>
+          </div>
+
+          <div id="modal-var-remove-group" style="display: none; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border-color);">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: var(--danger);">
+              <input type="checkbox" name="remove_image" value="1">
+              <span>Remove colour photo (revert to silhouette default photo)</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save & Publish Photo &rarr;</button>
         </div>
       </form>
     </div>

@@ -12,7 +12,7 @@ router.use(requireAuth);
 // List silhouettes with rich filtering
 router.get('/', async (req, res, next) => {
   try {
-    const { q, category, status = 'active', image = 'all', sort = 'id-asc' } = req.query;
+    const { q, category, status = 'all', image = 'all', sort = 'id-asc' } = req.query;
 
     const conditions = [];
     const params = [];
@@ -177,6 +177,34 @@ router.post('/', requireRole('owner', 'stock_adder'), upload.single('image'), as
 
     const newProductId = insertRes.rows[0].id;
 
+    // Helper functions for automatic robust SKU generation
+    function buildBaseSku(productName, catName, sizeStr, colStr) {
+      const words = (productName || catName || 'SIL').trim().split(/\s+/).filter(Boolean);
+      let prefix = '';
+      if (words.length >= 2) {
+        prefix = words.map(w => w[0].toUpperCase()).join('').slice(0, 4);
+      } else if (words.length === 1) {
+        prefix = words[0].slice(0, 3).toUpperCase();
+      }
+      if (!prefix || prefix.length < 2) prefix = 'SIL';
+
+      const colCode = (colStr || 'STD').replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || 'STD';
+      const sizeCode = (sizeStr || 'FS').replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || 'FS';
+      return `${prefix}-${colCode}-${sizeCode}`;
+    }
+
+    async function getUniqueSku(pgClient, baseCandidate) {
+      let candidate = (baseCandidate || 'SKU').replace(/[^A-Z0-9-]/gi, '').toUpperCase();
+      if (!candidate || candidate.length < 2) candidate = 'SKU';
+      let current = candidate;
+      let counter = 1;
+      while (true) {
+        const check = await pgClient.query('SELECT 1 FROM variants WHERE sku = $1', [current]);
+        if (check.rows.length === 0) return current;
+        current = `${candidate}-${counter++}`;
+      }
+    }
+
     // Process initial variants if provided in array
     const skus = Array.isArray(req.body['var_sku']) ? req.body['var_sku'] : (req.body['var_sku'] ? [req.body['var_sku']] : []);
     const sizes = Array.isArray(req.body['var_size']) ? req.body['var_size'] : (req.body['var_size'] ? [req.body['var_size']] : []);
@@ -184,20 +212,44 @@ router.post('/', requireRole('owner', 'stock_adder'), upload.single('image'), as
     const stocks = Array.isArray(req.body['var_stock']) ? req.body['var_stock'] : (req.body['var_stock'] ? [req.body['var_stock']] : []);
     const reorders = Array.isArray(req.body['var_reorder']) ? req.body['var_reorder'] : (req.body['var_reorder'] ? [req.body['var_reorder']] : []);
 
-    for (let i = 0; i < skus.length; i++) {
-      const skuVal = (skus[i] || '').trim().toUpperCase();
-      if (!skuVal) continue;
-
-      const sizeVal = (sizes[i] || '').trim() || null;
-      const colourVal = (colours[i] || '').trim() || null;
+    let createdVariantsCount = 0;
+    for (let i = 0; i < Math.max(skus.length, sizes.length, colours.length, stocks.length); i++) {
+      let rawSku = (skus[i] || '').trim().toUpperCase();
+      const rawSize = (sizes[i] || '').trim();
+      const rawColour = (colours[i] || '').trim();
       const stockVal = Math.max(0, parseInt(stocks[i], 10) || 0);
       const reorderVal = Math.max(0, parseInt(reorders[i], 10) || 2);
 
+      // Check if row has any content or stock
+      const hasContent = rawSku || rawSize || rawColour || stockVal > 0;
+      if (!hasContent) continue;
+
+      const sizeVal = rawSize || 'Free Size';
+      const colourVal = rawColour || 'Standard';
+
+      let finalSku = rawSku;
+      if (!finalSku) {
+        const baseCandidate = buildBaseSku(name.trim(), finalCategory, sizeVal, colourVal);
+        finalSku = await getUniqueSku(client, baseCandidate);
+      } else {
+        finalSku = await getUniqueSku(client, finalSku);
+      }
+
       await client.query(`
         INSERT INTO variants (product_id, sku, size, colour, on_hand, reserved, reorder_level)
-        VALUES ($1, $2, $3, $4, $5, 0, $6)
-        ON CONFLICT (sku) DO NOTHING;
-      `, [newProductId, skuVal, sizeVal, colourVal, stockVal, reorderVal]);
+        VALUES ($1, $2, $3, $4, $5, 0, $6);
+      `, [newProductId, finalSku, sizeVal, colourVal, stockVal, reorderVal]);
+      createdVariantsCount++;
+    }
+
+    // Safety fallback: every purchasable product must have at least 1 variant SKU
+    if (createdVariantsCount === 0) {
+      const baseCandidate = buildBaseSku(name.trim(), finalCategory, 'FS', 'STD');
+      const defSku = await getUniqueSku(client, baseCandidate);
+      await client.query(`
+        INSERT INTO variants (product_id, sku, size, colour, on_hand, reserved, reorder_level)
+        VALUES ($1, $2, $3, $4, 0, 0, 2);
+      `, [newProductId, defSku, 'Free Size', 'Standard']);
     }
 
     await client.query('COMMIT');
@@ -331,6 +383,45 @@ router.post('/:id/upload-image', requireRole('owner', 'stock_adder'), upload.sin
       return res.status(500).json({ error: err.message });
     }
     res.redirect(`/products?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
+// Upload / Update Photo for all variants of a specific colour for this product
+router.post('/:id/color-image', requireRole('owner', 'stock_adder'), upload.single('image'), async (req, res) => {
+  const productId = parseInt(req.params.id, 10);
+  const redirectTarget = req.headers.referer || `/products/${productId}/edit`;
+  try {
+    const { colour, remove_image, manual_image_url } = req.body;
+    if (!colour || !colour.trim()) {
+      throw new Error('Colour name is required.');
+    }
+
+    let finalImageUrl = null;
+    if (remove_image === '1') {
+      finalImageUrl = null;
+    } else if (req.file) {
+      finalImageUrl = `/products/${req.file.filename}`;
+    } else if (manual_image_url && manual_image_url.trim()) {
+      finalImageUrl = manual_image_url.trim();
+    } else {
+      throw new Error('No image file or URL was provided.');
+    }
+
+    await query(`
+      UPDATE variants
+      SET image_url = $1
+      WHERE product_id = $2 AND LOWER(TRIM(colour)) = LOWER(TRIM($3));
+    `, [finalImageUrl, productId, colour.trim()]);
+
+    const msg = finalImageUrl
+      ? `Photo updated for colour "${colour.trim()}".`
+      : `Photo removed for colour "${colour.trim()}".`;
+
+    const sep = redirectTarget.includes('?') ? '&' : '?';
+    res.redirect(`${redirectTarget}${sep}flash=${encodeURIComponent(msg)}`);
+  } catch (err) {
+    const sep = redirectTarget.includes('?') ? '&' : '?';
+    res.redirect(`${redirectTarget}${sep}error=${encodeURIComponent(err.message)}`);
   }
 });
 

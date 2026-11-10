@@ -54,6 +54,7 @@ async function syncCart(req) {
         price_inr: stock.price_inr,
         size: stock.size,
         colour: stock.colour,
+        image_url: stock.image_url || stock.variant_image_url || null,
         qty,
         available,
         line_total: stock.price_inr * qty

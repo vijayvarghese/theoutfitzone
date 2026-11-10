@@ -119,10 +119,33 @@
           <tr>
             <!-- Thumbnail -->
             <td style="text-align: center;">
-              <% if (v.image_url && v.image_url.trim()) { %>
-                <img src="<%= v.image_url %>" alt="<%= v.product_name %>" class="prod-thumb" style="width: 38px; height: 38px;" onerror="this.onerror=null;this.parentElement.innerHTML='-';">
+              <% if (typeof canModifyStock !== 'undefined' && canModifyStock) { %>
+                <button
+                  type="button"
+                  class="btn-open-variant-image-modal"
+                  data-variant-id="<%= v.variant_id %>"
+                  data-sku="<%= v.sku %>"
+                  data-product-name="<%= v.product_name %>"
+                  data-size="<%= v.size || '' %>"
+                  data-colour="<%= v.colour || '' %>"
+                  data-image-url="<%= v.variant_image_url || v.image_url || '' %>"
+                  style="background: none; border: none; padding: 0; cursor: pointer; display: inline-block;"
+                  title="Upload / change photo for colour '<%= v.colour %>' (<%= v.sku %>)"
+                >
+                  <% if (v.variant_image_url && v.variant_image_url.trim()) { %>
+                    <img src="<%= v.variant_image_url %>" alt="<%= v.product_name %>" class="prod-thumb" style="width: 38px; height: 38px; border: 2px solid var(--primary);" onerror="this.onerror=null;this.parentElement.innerHTML='-';">
+                  <% } else if (v.image_url && v.image_url.trim()) { %>
+                    <img src="<%= v.image_url %>" alt="<%= v.product_name %>" class="prod-thumb" style="width: 38px; height: 38px; opacity: 0.75;" onerror="this.onerror=null;this.parentElement.innerHTML='-';" title="Falling back to silhouette default photo">
+                  <% } else { %>
+                    <div class="prod-thumb-placeholder" style="width: 38px; height: 38px; font-size: 10px;" title="No photo configured">+ Pic</div>
+                  <% } %>
+                </button>
               <% } else { %>
-                <div class="prod-thumb-placeholder" style="width: 38px; height: 38px; font-size: 10px;">-</div>
+                <% if (v.image_url && v.image_url.trim()) { %>
+                  <img src="<%= v.image_url %>" alt="<%= v.product_name %>" class="prod-thumb" style="width: 38px; height: 38px;" onerror="this.onerror=null;this.parentElement.innerHTML='-';">
+                <% } else { %>
+                  <div class="prod-thumb-placeholder" style="width: 38px; height: 38px; font-size: 10px;">-</div>
+                <% } %>
               <% } %>
             </td>
 
@@ -225,6 +248,21 @@
                     title="Audit adjust on hand count with reason"
                   >
                     Adjust...
+                  </button>
+
+                  <!-- Photo Modal Trigger -->
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-xs btn-open-variant-image-modal"
+                    data-variant-id="<%= v.variant_id %>"
+                    data-sku="<%= v.sku %>"
+                    data-product-name="<%= v.product_name %>"
+                    data-size="<%= v.size || '' %>"
+                    data-colour="<%= v.colour || '' %>"
+                    data-image-url="<%= v.variant_image_url || v.image_url || '' %>"
+                    title="Upload photo for colour '<%= v.colour %>' (<%= v.sku %>)"
+                  >
+                    📷 Photo
                   </button>
 
                   <!-- Edit Specifications Modal Trigger -->

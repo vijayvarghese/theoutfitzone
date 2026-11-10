@@ -1,0 +1,659 @@
+<!-- Flash Notifications -->
+<% if (typeof flash !== 'undefined' && flash) { %>
+  <div class="alert alert-success" style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+    <span>✨ <%= flash %></span>
+    <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 16px; cursor: pointer;">&times;</button>
+  </div>
+<% } %>
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-danger" style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+    <span>⚠️ <%= error %></span>
+    <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 16px; cursor: pointer;">&times;</button>
+  </div>
+<% } %>
+
+<!-- Header Banner -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+  <div>
+    <h1 style="font-size: 22px; font-weight: 700; color: var(--text-main); margin: 0 0 4px 0;">
+      Coupons & Promotional Discounts
+    </h1>
+    <div style="font-size: 13px; color: var(--text-muted);">
+      Exclusive Owner Management: Create promotional codes, configure redemption limits, extend validities, and monitor discount budget.
+    </div>
+  </div>
+  <button type="button" class="btn btn-primary" data-modal-target="modal-create-coupon">
+    + Create New Coupon
+  </button>
+</div>
+
+<!-- KPI Metrics Overview -->
+<div class="kpi-grid" style="margin-bottom: 24px;">
+  <!-- Total Discount Budget Given -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Coupon Budget Utilized</div>
+      <div class="kpi-value" style="color: #047857;"><%= formatInr(stats.totalDiscountGiven) %></div>
+      <div class="kpi-sub">Total discount redeemed across customer orders</div>
+    </div>
+    <div class="kpi-icon green">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="1" x2="12" y2="23"></line>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Total Redemptions -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Total Redemptions</div>
+      <div class="kpi-value"><%= stats.totalRedemptions %></div>
+      <div class="kpi-sub">In <%= stats.discountedOrders %> completed orders</div>
+    </div>
+    <div class="kpi-icon indigo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Active Coupons -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Active Promotions</div>
+      <div class="kpi-value"><%= stats.activeCoupons %></div>
+      <div class="kpi-sub">Out of <%= stats.totalCoupons %> configured promo codes</div>
+    </div>
+    <div class="kpi-icon yellow">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+        <line x1="7" y1="7" x2="7.01" y2="7"></line>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- Coupons Table Card -->
+<div class="card" style="padding: 0; overflow: hidden; background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+  <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #F9FAFB;">
+    <div>
+      <h2 style="font-size: 15px; font-weight: 700; color: var(--text-main); margin: 0;">Promotional Codes Directory</h2>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Active codes are automatically validated and deducted at customer checkout.</div>
+    </div>
+    <span class="badge badge-neutral"><%= coupons.length %> codes</span>
+  </div>
+
+  <div style="overflow-x: auto;">
+    <table class="data-table" style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th>Coupon Code & Description</th>
+          <th>Discount Value</th>
+          <th>Scope & Redemptions</th>
+          <th>Status</th>
+          <th>Validity / Expiration</th>
+          <th style="text-align: right;">Owner Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (coupons.length === 0) { %>
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              No coupons configured yet. Click "+ Create New Coupon" above to generate your first promotion.
+            </td>
+          </tr>
+        <% } %>
+
+        <% coupons.forEach(c => { %>
+          <%
+            const isExpired = c.expires_at && new Date(c.expires_at) < new Date();
+            const isExhausted = c.scope !== 'unlimited' && c.usage_limit != null && c.usage_count >= c.usage_limit;
+          %>
+          <tr style="<%= (!c.active || isExpired || isExhausted) ? 'background-color: #FAFAFA;' : '' %>">
+            <!-- Code & Description -->
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-family: monospace; font-size: 13.5px; font-weight: 700; background: #EEF2FF; color: #4338CA; padding: 4px 8px; border-radius: 4px; border: 1px solid #C7D2FE; letter-spacing: 0.05em;">
+                  <%= c.code %>
+                </span>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-xs btn-copy-coupon"
+                  data-code="<%= c.code %>"
+                  title="Copy code to clipboard"
+                  style="font-size: 10px; padding: 2px 6px;"
+                >
+                  📋 Copy
+                </button>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; max-width: 260px;">
+                <%= c.description || 'No description entered' %>
+              </div>
+            </td>
+
+            <!-- Discount -->
+            <td>
+              <div style="font-weight: 700; font-size: 14px; color: #047857;">
+                <% if (c.discount_type === 'percent') { %>
+                  <%= Number(c.discount_value) %>% OFF
+                <% } else { %>
+                  <%= formatInr(c.discount_value) %> Flat OFF
+                <% } %>
+              </div>
+              <% if (Number(c.min_order_amount) > 0) { %>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                  Min order: <%= formatInr(c.min_order_amount) %>
+                </div>
+              <% } else { %>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                  No minimum order
+                </div>
+              <% } %>
+            </td>
+
+            <!-- Scope & Counter -->
+            <td>
+              <% if (c.scope === 'unlimited') { %>
+                <span class="badge badge-success" style="font-size: 11px;">
+                  ♾️ Unlimited Scope
+                </span>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+                  Used <strong><%= c.usage_count %></strong> times
+                </div>
+              <% } else if (c.scope === 'single_use') { %>
+                <span class="badge <%= c.usage_count >= 1 ? 'badge-neutral' : 'badge-primary' %>" style="font-size: 11px;">
+                  ⚡ Single Use (1x)
+                </span>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+                  <%= c.usage_count >= 1 ? '❌ Already Redeemed' : '✅ 1 use remaining' %>
+                </div>
+              <% } else { %>
+                <%
+                  const limit = c.usage_limit || 1;
+                  const pct = Math.min(100, Math.round((c.usage_count / limit) * 100));
+                  const remaining = Math.max(0, limit - c.usage_count);
+                %>
+                <span class="badge <%= remaining === 0 ? 'badge-danger' : 'badge-primary' %>" style="font-size: 11px;">
+                  🎯 Custom: <%= c.usage_count %> / <%= limit %> used
+                </span>
+                <div style="margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                  <div style="flex: 1; max-width: 100px; height: 5px; background: #E5E7EB; border-radius: 3px; overflow: hidden;">
+                    <div style="width: <%= pct %>%; height: 100%; background: <%= remaining === 0 ? '#EF4444' : '#4F46E5' %>;"></div>
+                  </div>
+                  <span style="font-size: 10px; color: var(--text-muted);"><%= remaining %> left</span>
+                </div>
+              <% } %>
+            </td>
+
+            <!-- Status -->
+            <td>
+              <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                <% if (!c.active) { %>
+                  <span class="badge badge-neutral">○ Inactive (Disabled)</span>
+                <% } else if (isExpired) { %>
+                  <span class="badge badge-danger">⌛ Expired</span>
+                <% } else if (isExhausted) { %>
+                  <span class="badge badge-danger">🚫 Limit Reached</span>
+                <% } else { %>
+                  <span class="badge badge-success">● Active</span>
+                <% } %>
+              </div>
+            </td>
+
+            <!-- Validity / Expiration -->
+            <td>
+              <% if (!c.expires_at) { %>
+                <span style="font-size: 12.5px; color: var(--text-main); font-weight: 500;">Never expires</span>
+              <% } else { %>
+                <div style="font-size: 12.5px; font-weight: 600; color: <%= isExpired ? '#DC2626' : 'var(--text-main)' %>;">
+                  <%= formatDate(c.expires_at) %>
+                </div>
+                <div style="font-size: 11px; color: <%= isExpired ? '#DC2626' : 'var(--text-muted)' %>; margin-top: 2px;">
+                  <%
+                    const diffDays = Math.ceil((new Date(c.expires_at) - new Date()) / (1000 * 3600 * 24));
+                  %>
+                  <% if (diffDays < 0) { %>
+                    Expired <%= Math.abs(diffDays) %> day(s) ago
+                  <% } else if (diffDays === 0) { %>
+                    Expires today
+                  <% } else { %>
+                    In <%= diffDays %> day(s)
+                  <% } %>
+                </div>
+              <% } %>
+            </td>
+
+            <!-- Actions -->
+            <td style="text-align: right;">
+              <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+                <!-- Toggle Active -->
+                <form method="POST" action="/coupons/<%= c.id %>/toggle-status" style="margin: 0;">
+                  <button
+                    type="submit"
+                    class="btn btn-xs <%= c.active ? 'btn-outline-danger' : 'btn-outline-success' %>"
+                    title="<%= c.active ? 'Deactivate this coupon' : 'Activate this coupon' %>"
+                  >
+                    <%= c.active ? 'Deactivate' : 'Activate' %>
+                  </button>
+                </form>
+
+                <!-- Extend Validity -->
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-xs btn-open-extend-modal"
+                  data-coupon-id="<%= c.id %>"
+                  data-coupon-code="<%= c.code %>"
+                  data-expires-at="<%= c.expires_at ? new Date(c.expires_at).toISOString().slice(0, 16) : '' %>"
+                  title="Extend time or update expiry"
+                >
+                  ⏳ Extend
+                </button>
+
+                <!-- Edit Coupon -->
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-xs btn-open-edit-modal"
+                  data-coupon='<%- JSON.stringify(c) %>'
+                  title="Edit coupon parameters"
+                >
+                  ✏️ Edit
+                </button>
+
+                <!-- Delete Coupon -->
+                <form
+                  method="POST"
+                  action="/coupons/<%= c.id %>/delete"
+                  onsubmit="return confirm('Permanently delete coupon <%= c.code %>? This cannot be undone.');"
+                  style="margin: 0;"
+                >
+                  <button type="submit" class="btn btn-xs btn-outline-danger" title="Delete coupon">
+                    🗑️
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Create New Coupon                    -->
+<!-- ========================================== -->
+<div class="modal-overlay" id="modal-create-coupon">
+  <div class="modal-content" style="max-width: 540px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Create Promotional Coupon</h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+
+    <form method="POST" action="/coupons/new" id="form-create-coupon">
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- Code with Random Generator Button -->
+        <div>
+          <label class="form-label" for="create-coupon-code" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Coupon Code *</span>
+            <button type="button" id="btn-generate-random-code" class="btn btn-secondary btn-xs" style="font-size: 11px;">
+              🎲 Generate Stylish Code
+            </button>
+          </label>
+          <input
+            type="text"
+            id="create-coupon-code"
+            name="code"
+            class="form-input"
+            value="<%= sampleCode %>"
+            required
+            style="font-family: monospace; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"
+          >
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            Codes are automatically capitalized. Example: <code>AURA-7K9M</code>, <code>SILK-VIP-20</code>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="form-label" for="create-coupon-desc">Internal Campaign Description</label>
+          <input
+            type="text"
+            id="create-coupon-desc"
+            name="description"
+            class="form-input"
+            placeholder="e.g. Winter Atelier Showcase 15% Off"
+          >
+        </div>
+
+        <!-- Discount Type & Value -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label class="form-label" for="create-discount-type">Discount Type *</label>
+            <select id="create-discount-type" name="discount_type" class="form-select" required>
+              <option value="percent">Percentage (% OFF)</option>
+              <option value="flat">Flat Amount (₹ OFF)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="create-discount-value">Discount Amount *</label>
+            <div style="position: relative;">
+              <input
+                type="number"
+                id="create-discount-value"
+                name="discount_value"
+                class="form-input"
+                step="0.01"
+                min="0.01"
+                value="10"
+                required
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Minimum Order Amount -->
+        <div>
+          <label class="form-label" for="create-min-order">Minimum Order Subtotal (₹)</label>
+          <input
+            type="number"
+            id="create-min-order"
+            name="min_order_amount"
+            class="form-input"
+            step="1"
+            min="0"
+            value="0"
+            placeholder="0 for no minimum"
+          >
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            Coupon will only apply if customer cart subtotal meets or exceeds this amount.
+          </div>
+        </div>
+
+        <!-- Redemption Scope -->
+        <div>
+          <label class="form-label">Redemption Scope & Usage Counter *</label>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+            <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; cursor: pointer;">
+              <input type="radio" name="scope" value="unlimited" checked style="margin-top: 3px;" onchange="toggleScopeInputs(this.value)">
+              <div>
+                <strong>Unlimited Redemptions</strong>
+                <div style="font-size: 11px; color: var(--text-muted);">Any number of customers can use this coupon until expired or disabled.</div>
+              </div>
+            </label>
+            <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; cursor: pointer;">
+              <input type="radio" name="scope" value="single_use" style="margin-top: 3px;" onchange="toggleScopeInputs(this.value)">
+              <div>
+                <strong>Single-Use (Counter = 1)</strong>
+                <div style="font-size: 11px; color: var(--text-muted);">Can only be availed once in total. Once an order completes, it becomes exhausted.</div>
+              </div>
+            </label>
+            <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; cursor: pointer;">
+              <input type="radio" name="scope" value="custom" style="margin-top: 3px;" onchange="toggleScopeInputs(this.value)">
+              <div>
+                <strong>Custom Usage Counter</strong>
+                <div style="font-size: 11px; color: var(--text-muted);">Set a fixed budget limit of total redemptions (e.g. first 50 customers).</div>
+              </div>
+            </label>
+          </div>
+
+          <div id="create-custom-limit-wrap" style="display: none; margin-top: 10px; padding-left: 24px;">
+            <label class="form-label" for="create-custom-limit" style="font-size: 12px;">Total Allowed Redemptions</label>
+            <input type="number" id="create-custom-limit" name="custom_usage_limit" class="form-input" min="1" value="50" style="max-width: 140px;">
+          </div>
+        </div>
+
+        <!-- Validity Expiration -->
+        <div>
+          <label class="form-label">Coupon Validity / Expiration</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <select name="expires_in_days" class="form-select" id="create-expiry-preset" onchange="handleExpiryPreset(this.value)">
+                <option value="30">Expires in 30 Days</option>
+                <option value="7">Expires in 7 Days</option>
+                <option value="60">Expires in 60 Days</option>
+                <option value="90">Expires in 90 Days</option>
+                <option value="0">Never Expires</option>
+                <option value="custom">Pick Custom Date &rarr;</option>
+              </select>
+            </div>
+            <div>
+              <input
+                type="datetime-local"
+                id="create-custom-expiry"
+                name="custom_expires_at"
+                class="form-input"
+                style="display: none;"
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Promotion Coupon &rarr;</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Extend Time / Validity               -->
+<!-- ========================================== -->
+<div class="modal-overlay" id="modal-extend-coupon">
+  <div class="modal-content" style="max-width: 440px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Extend Coupon Validity</h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+
+    <form method="POST" action="" id="form-extend-coupon">
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <span style="font-size: 12px; color: var(--text-muted);">Extending validity for:</span>
+          <div id="extend-coupon-code-label" style="font-family: monospace; font-size: 16px; font-weight: 700; color: #4338CA; margin-top: 2px;"></div>
+        </div>
+
+        <div>
+          <label class="form-label">Add Validity Duration</label>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <button type="submit" name="days" value="7" class="btn btn-secondary btn-sm" style="text-align: center;">+7 Days</button>
+            <button type="submit" name="days" value="14" class="btn btn-secondary btn-sm" style="text-align: center;">+14 Days</button>
+            <button type="submit" name="days" value="30" class="btn btn-secondary btn-sm" style="text-align: center;">+30 Days</button>
+            <button type="submit" name="days" value="90" class="btn btn-secondary btn-sm" style="text-align: center;">+90 Days</button>
+          </div>
+        </div>
+
+        <div style="border-top: 1px dashed var(--border-color); padding-top: 12px;">
+          <label class="form-label" for="extend-custom-date">Or Set Specific Expiry Date & Time</label>
+          <input type="datetime-local" id="extend-custom-date" name="new_date" class="form-input">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Expiry Date</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Edit Coupon Parameters               -->
+<!-- ========================================== -->
+<div class="modal-overlay" id="modal-edit-coupon">
+  <div class="modal-content" style="max-width: 520px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Coupon Entry</h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+
+    <form method="POST" action="" id="form-edit-coupon">
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label class="form-label" for="edit-coupon-code">Coupon Code</label>
+          <input type="text" id="edit-coupon-code" name="code" class="form-input" required style="font-family: monospace; font-weight: 700; text-transform: uppercase;">
+        </div>
+
+        <div>
+          <label class="form-label" for="edit-coupon-desc">Description</label>
+          <input type="text" id="edit-coupon-desc" name="description" class="form-input">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label class="form-label" for="edit-discount-type">Discount Type</label>
+            <select id="edit-discount-type" name="discount_type" class="form-select">
+              <option value="percent">Percentage (%)</option>
+              <option value="flat">Flat Amount (₹)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="edit-discount-value">Discount Value</label>
+            <input type="number" id="edit-discount-value" name="discount_value" class="form-input" step="0.01" min="0.01" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label" for="edit-min-order">Minimum Order Subtotal (₹)</label>
+          <input type="number" id="edit-min-order" name="min_order_amount" class="form-input" step="1" min="0">
+        </div>
+
+        <div>
+          <label class="form-label" for="edit-scope">Redemption Scope</label>
+          <select id="edit-scope" name="scope" class="form-select" onchange="handleEditScope(this.value)">
+            <option value="unlimited">Unlimited Usage</option>
+            <option value="single_use">Single Use (1x)</option>
+            <option value="custom">Custom Usage Limit</option>
+          </select>
+        </div>
+
+        <div id="edit-custom-limit-wrap" style="display: none;">
+          <label class="form-label" for="edit-custom-limit">Max Allowed Redemptions</label>
+          <input type="number" id="edit-custom-limit" name="custom_usage_limit" class="form-input" min="1">
+        </div>
+
+        <div>
+          <label class="form-label" for="edit-expires-at">Expiration Timestamp (Blank for never)</label>
+          <input type="datetime-local" id="edit-expires-at" name="expires_at" class="form-input">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Coupon &rarr;</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function toggleScopeInputs(val) {
+    const wrap = document.getElementById('create-custom-limit-wrap');
+    if (wrap) wrap.style.display = val === 'custom' ? 'block' : 'none';
+  }
+
+  function handleExpiryPreset(val) {
+    const custom = document.getElementById('create-custom-expiry');
+    if (custom) custom.style.display = val === 'custom' ? 'block' : 'none';
+  }
+
+  function handleEditScope(val) {
+    const wrap = document.getElementById('edit-custom-limit-wrap');
+    if (wrap) wrap.style.display = val === 'custom' ? 'block' : 'none';
+  }
+
+  // Interactive Code Generator
+  document.getElementById('btn-generate-random-code')?.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/coupons/generate-code');
+      const data = await res.json();
+      if (data.code) {
+        document.getElementById('create-coupon-code').value = data.code;
+      }
+    } catch (err) {
+      console.error('Error generating code:', err);
+    }
+  });
+
+  // Clipboard copy buttons
+  document.querySelectorAll('.btn-copy-coupon').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const code = btn.dataset.code;
+      try {
+        await navigator.clipboard.writeText(code);
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✓ Copied';
+        setTimeout(() => { btn.innerHTML = originalText; }, 1800);
+      } catch {
+        prompt('Copy coupon code:', code);
+      }
+    });
+  });
+
+  // Extend Modal Trigger
+  document.querySelectorAll('.btn-open-extend-modal').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.couponId;
+      const code = btn.dataset.couponCode;
+      const expiresAt = btn.dataset.expiresAt;
+
+      const form = document.getElementById('form-extend-coupon');
+      form.action = `/coupons/${id}/extend`;
+      document.getElementById('extend-coupon-code-label').textContent = code;
+      const dateInput = document.getElementById('extend-custom-date');
+      if (dateInput && expiresAt) dateInput.value = expiresAt;
+
+      if (window.openModal) {
+        window.openModal('modal-extend-coupon');
+      } else {
+        const modal = document.getElementById('modal-extend-coupon');
+        modal?.classList.add('is-active');
+        document.body.style.overflow = 'hidden';
+      }
+    });
+  });
+
+  // Edit Modal Trigger
+  document.querySelectorAll('.btn-open-edit-modal').forEach(btn => {
+    btn.addEventListener('click', () => {
+      try {
+        const c = JSON.parse(btn.dataset.coupon);
+        const form = document.getElementById('form-edit-coupon');
+        form.action = `/coupons/${c.id}/update`;
+
+        document.getElementById('edit-coupon-code').value = c.code || '';
+        document.getElementById('edit-coupon-desc').value = c.description || '';
+        document.getElementById('edit-discount-type').value = c.discount_type || 'percent';
+        document.getElementById('edit-discount-value').value = c.discount_value || '10';
+        document.getElementById('edit-min-order').value = c.min_order_amount || '0';
+        document.getElementById('edit-scope').value = c.scope || 'unlimited';
+        handleEditScope(c.scope);
+
+        if (c.usage_limit) {
+          document.getElementById('edit-custom-limit').value = c.usage_limit;
+        }
+
+        const dateInput = document.getElementById('edit-expires-at');
+        if (dateInput) {
+          if (c.expires_at) {
+            dateInput.value = new Date(c.expires_at).toISOString().slice(0, 16);
+          } else {
+            dateInput.value = '';
+          }
+        }
+
+        if (window.openModal) {
+          window.openModal('modal-edit-coupon');
+        } else {
+          const modal = document.getElementById('modal-edit-coupon');
+          modal?.classList.add('is-active');
+          document.body.style.overflow = 'hidden';
+        }
+      } catch (err) {
+        console.error('Error opening edit coupon modal:', err);
+      }
+    });
+  });
+</script>

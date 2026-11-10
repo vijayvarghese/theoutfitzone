@@ -342,6 +342,7 @@ const server = http.createServer(async (req, res) => {
             sku: v.sku,
             size: v.size,
             colour: v.colour,
+            image_url: v.image_url || null,
             available
           };
           if (isAdmin) {

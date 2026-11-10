@@ -67,7 +67,9 @@ async function getOrder(db, orderNo) {
     payment_ref: r.payment_ref,
     subtotal: r.subtotal,
     shipping: r.shipping,
+    discount: r.discount || 0,
     total: r.total,
+    coupon_code: r.coupon_code || null,
     ship_address: r.ship_address,
     ship_pincode: r.ship_pincode,
     courier: r.courier,
@@ -106,7 +108,7 @@ async function listOrders({ status, channel, q, limit, offset }) {
   const off = Math.max(parseInt(offset, 10) || 0, 0);
   args.push(lim, off);
   const { rows } = await pool.query(
-    `SELECT o.order_no, o.status, o.channel, o.payment_mode, o.payment_status, o.total,
+    `SELECT o.order_no, o.status, o.channel, o.payment_mode, o.payment_status, o.total, o.discount, o.coupon_code,
             o.created_at, o.updated_at, c.name AS customer_name, c.phone AS customer_phone, c.email AS customer_email,
             (SELECT COALESCE(SUM(qty), 0) FROM order_items oi WHERE oi.order_id = o.id) AS items
        FROM orders o LEFT JOIN customers c ON c.id = o.customer_id
@@ -251,6 +253,7 @@ function validateCreate(body) {
     replyTo: text(b.reply_to, 120),
     notes: text(b.notes, 1000),
     idemKey: text(b.idempotency_key, 120),
+    couponCode: text(b.coupon_code, 50),
   };
 }
 
@@ -343,14 +346,47 @@ async function createInTx(c, input, actor) {
   }
 
   const subtotal = round2(lines.reduce((s, l) => s + l.price_inr * l.qty, 0));
-  const total = round2(subtotal + input.shipping);
+
+  // Validate coupon and calculate discount if provided
+  let coupon = null;
+  let discount = 0;
+  if (input.couponCode) {
+    const cq = await c.query(
+      `SELECT * FROM coupons WHERE LOWER(code) = LOWER($1) FOR UPDATE`,
+      [input.couponCode]
+    );
+    if (!cq.rowCount) {
+      throw new ApiError(400, 'INVALID_COUPON', `Coupon "${input.couponCode}" is invalid.`);
+    }
+    coupon = cq.rows[0];
+    if (!coupon.active) {
+      throw new ApiError(400, 'COUPON_INACTIVE', `Coupon "${coupon.code}" is currently inactive.`);
+    }
+    if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+      throw new ApiError(400, 'COUPON_EXPIRED', `Coupon "${coupon.code}" has expired.`);
+    }
+    if (coupon.scope !== 'unlimited' && coupon.usage_limit != null && coupon.usage_count >= coupon.usage_limit) {
+      throw new ApiError(400, 'COUPON_EXHAUSTED', `Coupon "${coupon.code}" has reached its maximum redemption limit.`);
+    }
+    if (subtotal < Number(coupon.min_order_amount)) {
+      throw new ApiError(400, 'COUPON_MIN_ORDER', `Coupon "${coupon.code}" requires a minimum order subtotal of ₹${Number(coupon.min_order_amount).toLocaleString('en-IN')}.`);
+    }
+
+    if (coupon.discount_type === 'percent') {
+      discount = round2(subtotal * (Number(coupon.discount_value) / 100));
+    } else {
+      discount = round2(Math.min(Number(coupon.discount_value), subtotal));
+    }
+  }
+
+  const total = round2(Math.max(0, subtotal + input.shipping - discount));
 
   const ins = await c.query(
     `INSERT INTO orders (order_no, customer_id, channel, reply_to, status, payment_mode, payment_status,
-                         subtotal, shipping, total, ship_address, ship_pincode, notes, expires_at, idempotency_key)
+                         subtotal, shipping, discount, total, coupon_code, ship_address, ship_pincode, notes, expires_at, idempotency_key)
      VALUES ($1 || '-' || to_char(now() AT TIME ZONE 'Asia/Kolkata', 'YYMM') || '-' ||
              lpad(nextval('order_seq')::text, 5, '0'),
-             $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+             $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
      RETURNING id, order_no`,
     [
       PREFIX,
@@ -362,7 +398,9 @@ async function createInTx(c, input, actor) {
       paymentStatus,
       subtotal,
       input.shipping,
+      discount,
       total,
+      coupon ? coupon.code : null,
       input.address,
       input.pincode,
       input.notes,
@@ -371,6 +409,13 @@ async function createInTx(c, input, actor) {
     ]
   );
   const { id: orderId, order_no: orderNo } = ins.rows[0];
+
+  if (coupon) {
+    await c.query(
+      `UPDATE coupons SET usage_count = usage_count + 1, updated_at = now() WHERE id = $1`,
+      [coupon.id]
+    );
+  }
 
   for (const l of lines) {
     await c.query(

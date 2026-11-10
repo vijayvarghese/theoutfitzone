@@ -15,6 +15,7 @@ function shapeVariant(v, admin) {
     sku: v.sku,
     size: v.size,
     colour: v.colour,
+    image_url: v.variant_image_url || null,
     available: Math.max(v.on_hand - v.reserved, 0),
   };
   if (admin) {
@@ -33,7 +34,7 @@ async function listProducts({ category, q, admin }) {
 
   const { rows } = await pool.query(
     `SELECT p.id, p.name, p.category, p.price_inr, p.description, p.image_url,
-            v.sku, v.size, v.colour, v.on_hand, v.reserved, v.reorder_level
+            v.sku, v.size, v.colour, v.image_url AS variant_image_url, v.on_hand, v.reserved, v.reorder_level
        FROM products p
        LEFT JOIN variants v ON v.product_id = p.id
       WHERE ${where.join(' AND ')}
@@ -67,7 +68,7 @@ async function listProducts({ category, q, admin }) {
 
 async function getStock(sku, admin) {
   const { rows } = await pool.query(
-    `SELECT v.sku, v.size, v.colour, v.on_hand, v.reserved, v.reorder_level,
+    `SELECT v.sku, v.size, v.colour, v.image_url AS variant_image_url, v.on_hand, v.reserved, v.reorder_level,
             p.name AS product, p.price_inr, p.active
        FROM variants v JOIN products p ON p.id = v.product_id
       WHERE v.sku = $1`,

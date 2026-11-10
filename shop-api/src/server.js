@@ -93,6 +93,54 @@ app.get('/api/track/:orderNo', h(async (req, res) => {
   res.json(await orders.track(req.params.orderNo, req.query.phone4));
 }));
 
+app.get('/api/coupons/validate', h(async (req, res) => {
+  const code = String(req.query.code || '').trim();
+  const subtotal = Math.max(0, parseFloat(req.query.subtotal || '0') || 0);
+  if (!code) throw badRequest('Coupon code is required');
+
+  const q = await pool.query(
+    `SELECT * FROM coupons WHERE LOWER(code) = LOWER($1)`,
+    [code]
+  );
+  if (!q.rowCount) {
+    return res.status(404).json({ ok: false, error: `Coupon "${code}" was not found or is invalid.` });
+  }
+  const coupon = q.rows[0];
+  if (!coupon.active) {
+    return res.status(400).json({ ok: false, error: `Coupon "${coupon.code}" is currently disabled.` });
+  }
+  if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+    return res.status(400).json({ ok: false, error: `Coupon "${coupon.code}" has expired.` });
+  }
+  if (coupon.scope !== 'unlimited' && coupon.usage_limit != null && coupon.usage_count >= coupon.usage_limit) {
+    return res.status(400).json({ ok: false, error: `Coupon "${coupon.code}" has reached its maximum usage limit.` });
+  }
+  if (subtotal < Number(coupon.min_order_amount)) {
+    return res.status(400).json({
+      ok: false,
+      error: `Coupon "${coupon.code}" requires a minimum subtotal of ₹${Number(coupon.min_order_amount).toLocaleString('en-IN')}.`
+    });
+  }
+
+  let discount = 0;
+  if (coupon.discount_type === 'percent') {
+    discount = Math.round(subtotal * (Number(coupon.discount_value) / 100) * 100) / 100;
+  } else {
+    discount = Math.round(Math.min(Number(coupon.discount_value), subtotal) * 100) / 100;
+  }
+
+  res.json({
+    ok: true,
+    coupon: {
+      code: coupon.code,
+      description: coupon.description,
+      discount_type: coupon.discount_type,
+      discount_value: Number(coupon.discount_value),
+      discount
+    }
+  });
+}));
+
 /* ---------- needs X-API-Key ---------- */
 
 app.use('/api', requireKey);
