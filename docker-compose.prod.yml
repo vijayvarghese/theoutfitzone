@@ -38,7 +38,7 @@ services:
     image: ${WEB_IMAGE}
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-8000}:3000"
+      - "${WEB_PORT:-8085}:3000"
     depends_on:
       - shop-api
       - nginx-media
