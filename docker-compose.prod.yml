@@ -1,0 +1,108 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: shop
+      TZ: Asia/Kolkata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  shop-api:
+    image: ${API_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://shop:${DB_PASS}@db:5432/shop
+      API_KEY: ${API_KEY}
+      ORDER_PREFIX: DS
+      RESERVATION_MINUTES: "30"
+      TZ: Asia/Kolkata
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    image: ${WEB_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      shop-api:
+        condition: service_healthy
+      nginx-media:
+        condition: service_healthy
+    volumes:
+      - media-uploads:/app/public/products
+    environment:
+      SHOP_API_URL: http://shop-api:3000
+      SHOP_API_KEY: ${API_KEY}
+      NGINX_MEDIA_HOST: nginx-media
+      NGINX_MEDIA_PORT: "80"
+      SESSION_SECRET: ${SESSION_SECRET}
+      STORE_NAME: ${STORE_NAME:-The OutFit Zone}
+      STORE_TAGLINE: ${STORE_TAGLINE:-Wear Your Attitude}
+      SITE_URL: ${SITE_URL}
+      UPI_VPA: ${UPI_VPA}
+      UPI_PAYEE_NAME: ${UPI_PAYEE_NAME}
+      WHATSAPP_NUMBER: ${WHATSAPP_NUMBER}
+      INSTAGRAM_HANDLE: ${INSTAGRAM_HANDLE}
+      CONTACT_PHONE: ${CONTACT_PHONE}
+      CONTACT_EMAIL: ${CONTACT_EMAIL}
+      STORE_ADDRESS: ${STORE_ADDRESS}
+      STORE_HOURS: ${STORE_HOURS}
+      MAPS_URL: ${MAPS_URL}
+      SHIPPING_FLAT: ${SHIPPING_FLAT:-100}
+      FREE_SHIPPING_ABOVE: ${FREE_SHIPPING_ABOVE:-2500}
+      TRUST_PROXY: "true"
+      N8N_ORDER_WEBHOOK_URL: ${N8N_ORDER_WEBHOOK_URL:-}
+
+  inventory-portal:
+    image: ${PORTAL_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      nginx-media:
+        condition: service_healthy
+    volumes:
+      - media-uploads:/app/uploads
+    environment:
+      DATABASE_URL: postgres://shop:${DB_PASS}@db:5432/shop
+      PORT: "3000"
+      STORE_NAME: ${STORE_NAME:-The OutFit Zone}
+      SITE_URL: ${SITE_URL}
+      PUBLIC_MEDIA_URL: ${PUBLIC_MEDIA_URL:-/products}
+      NGINX_PREVIEW_URL: ${NGINX_PREVIEW_URL}
+      AUTH_USER_OWNER: ${AUTH_USER_OWNER}
+      AUTH_USER_STAFF1: ${AUTH_USER_STAFF1}
+      AUTH_USER_STOCK_ADDER: ${AUTH_USER_STOCK_ADDER}
+      SESSION_SECRET: ${PORTAL_SESSION_SECRET}
+      N8N_ORDER_WEBHOOK_URL: ${N8N_ORDER_WEBHOOK_URL:-}
+      TRUST_PROXY: "true"
+
+  nginx-media:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - media-uploads:/usr/share/nginx/html/products:ro
+      - ./nginx-media.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  media-uploads:
