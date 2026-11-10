@@ -2,7 +2,6 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
-    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
     environment:
       POSTGRES_USER: shop
       POSTGRES_PASSWORD: ${DB_PASS:-${POSTGRES_PASSWORD:-shopsecret}}
@@ -10,9 +9,8 @@ services:
       POSTGRES_HOST_AUTH_METHOD: trust
       TZ: Asia/Kolkata
     volumes:
-      - pgdata_v3:/var/lib/postgresql/data
+      - pgdata_v4:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./pg_hba_custom.conf:/etc/postgresql/pg_hba.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
       interval: 5s
@@ -131,7 +129,7 @@ services:
       retries: 5
 
 volumes:
-  pgdata_v3:
+  pgdata_v4:
   media-uploads:
 
 networks:
