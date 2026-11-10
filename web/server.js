@@ -23,7 +23,9 @@ if (config.trustProxy) {
   app.set('trust proxy', 1);
 }
 
-// Security headers with strict Content-Security-Policy
+// Security headers with dynamic CSP (only force HTTPS/upgrade when SITE_URL is https)
+const isHttps = Boolean(config.siteUrl && config.siteUrl.startsWith('https'));
+
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -31,15 +33,17 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
         fontSrc: ["'self'"],
         connectSrc: ["'self'"],
         frameAncestors: ["'none'"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
-        formAction: ["'self'"]
+        formAction: ["'self'"],
+        upgradeInsecureRequests: isHttps ? [] : null
       }
     },
+    hsts: isHttps ? { maxAge: 31536000, includeSubDomains: true } : false,
     crossOriginEmbedderPolicy: false
   })
 );

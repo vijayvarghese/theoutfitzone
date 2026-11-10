@@ -9,7 +9,7 @@ services:
       POSTGRES_HOST_AUTH_METHOD: trust
       TZ: Asia/Kolkata
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata_v2:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
@@ -24,7 +24,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://shop:${DB_PASS}@db:5432/shop
+      DATABASE_URL: postgres://shop:${DB_PASS:-shopsecret}@db:5432/shop
       API_KEY: ${API_KEY}
       ORDER_PREFIX: DS
       RESERVATION_MINUTES: "30"
@@ -85,7 +85,7 @@ services:
     volumes:
       - media-uploads:/app/uploads
     environment:
-      DATABASE_URL: postgres://shop:${DB_PASS}@db:5432/shop
+      DATABASE_URL: postgres://shop:${DB_PASS:-shopsecret}@db:5432/shop
       PORT: "3000"
       STORE_NAME: ${STORE_NAME:-The OutFit Zone}
       SITE_URL: ${SITE_URL}
@@ -114,7 +114,7 @@ services:
       retries: 5
 
 volumes:
-  pgdata:
+  pgdata_v2:
   media-uploads:
 
 networks:
