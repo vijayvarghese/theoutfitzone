@@ -7,8 +7,8 @@
   </div>
 
   <!-- Search & Filter Controls -->
-  <form method="GET" action="/orders" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-    <select name="status" class="form-select" style="min-width: 170px;">
+  <form method="GET" action="/orders" class="orders-filter-form" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+    <select name="status" class="form-select" style="min-width: 160px;">
       <option value="">All Statuses (<%= totalCount %>)</option>
       <% statusList.forEach(s => { %>
         <option value="<%= s %>" <%= status === s ? 'selected' : '' %>><%= s %></option>
@@ -21,7 +21,7 @@
       class="form-input"
       placeholder="Order #, phone, patron name..."
       value="<%= q %>"
-      style="min-width: 240px;"
+      style="min-width: 220px;"
     >
 
     <button type="submit" class="btn btn-secondary btn-sm" style="height: 38px;">
@@ -36,7 +36,7 @@
 </div>
 
 <!-- Quick Status Filter Pills -->
-<div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
+<div class="order-pills-bar" style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; max-width: 100%;">
   <a href="/orders" class="badge" style="text-decoration: none; padding: 6px 12px; background: <%= !status ? '#111827' : '#E5E7EB' %>; color: <%= !status ? '#FFFFFF' : '#374151' %>; font-weight: 600;">
     All
   </a>

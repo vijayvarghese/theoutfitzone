@@ -36,6 +36,11 @@
   padding: 0;
 }
 
+html {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-app);
@@ -45,12 +50,19 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
 }
 
 /* App Shell Layout */
 .app-container {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 /* Sidebar Backdrop for Mobile */
@@ -202,10 +214,12 @@ body {
 
 /* Main Content Area */
 .app-main {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .topbar {
@@ -219,6 +233,8 @@ body {
   position: sticky;
   top: 0;
   z-index: 30;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .topbar-left {
@@ -256,6 +272,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .topbar-actions {
@@ -269,7 +286,9 @@ body {
   flex: 1;
   max-width: 1600px;
   width: 100%;
+  min-width: 0;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* Responsive Grid Helpers */
@@ -290,6 +309,43 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+/* Order Detail Specific Layout Helpers */
+.order-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.order-grid-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .order-detail-grid {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) !important;
+  }
+}
+
+.order-items-table {
+  width: 100%;
+  min-width: 500px;
+}
+
+.order-action-form {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Alerts and Feedback */
@@ -1042,9 +1098,66 @@ body {
     grid-template-columns: 1fr !important;
     gap: 10px !important;
   }
+
+  /* Order Page Mobile Responsiveness */
+  .order-detail-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px;
+  }
+
+  .order-grid-col {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .order-detail-title {
+    font-size: 18px !important;
+  }
+
+  .order-whatsapp-wrap {
+    width: 100% !important;
+  }
+
+  .order-whatsapp-wrap .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .order-action-form {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  .order-action-form .form-input,
+  .order-action-form .form-select,
+  .order-action-form .btn {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .orders-filter-form {
+    width: 100% !important;
+  }
+
+  .orders-filter-form select,
+  .orders-filter-form input[type="search"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  .orders-filter-form button {
+    width: 100% !important;
+  }
 }
 
 @media (max-width: 480px) {
+  .order-detail-title {
+    font-size: 16px !important;
+  }
+
   .filter-toolbar form .form-select {
     flex: 1 1 100%;
     min-width: 100%;
