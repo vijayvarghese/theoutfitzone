@@ -136,7 +136,7 @@ router.get('/product/:id', async (req, res, next) => {
 
     res.render('pages/product', {
       title: `${product.name} | ${config.storeName}`,
-      metaDesc: product.description.slice(0, 155),
+      metaDesc: product.description ? product.description.slice(0, 155) : (config.storeTagline || ''),
       product,
       related,
       site: config.siteContent,

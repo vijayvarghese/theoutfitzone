@@ -84,7 +84,7 @@ function openModalWithProduct(modal, p) {
     titleEl.innerHTML = `<a href="/product/${p.id}" style="color: inherit; text-decoration: none;">${p.name}</a>`;
   }
   if (priceEl) priceEl.textContent = formatCurrency(p.price_inr);
-  if (descEl) descEl.textContent = p.description;
+  if (descEl) descEl.textContent = p.description || 'Exclusive handcrafted silhouette from our atelier collection.';
 
   // Media rendering: image or initials placeholder
   if (mediaContainer) {

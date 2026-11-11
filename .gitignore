@@ -22,6 +22,7 @@ yarn-error.log*
 
 # Scratch & test scripts
 scratch/
+n8n/
 
 # OS files
 .DS_Store
