@@ -20,6 +20,36 @@ function buildUpiUri({ vpa, payeeName, amount, orderNo, note }) {
 }
 
 /**
+ * Encodes app-specific deep links for Google Pay, PhonePe, and WhatsApp Pay.
+ */
+function buildAppSpecificUpiUris({ vpa, payeeName, amount, orderNo, note }) {
+  const am = Number(amount).toFixed(2);
+  const pn = encodeURIComponent(payeeName || config.upiPayeeName);
+  const pa = encodeURIComponent(vpa || config.upiVpa);
+  const tn = encodeURIComponent(note || `Order ${orderNo}`);
+  const query = `pa=${pa}&pn=${pn}&am=${am}&cu=INR&tn=${tn}`;
+
+  return {
+    gpay: {
+      android: `intent://pay?${query}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`,
+      ios: `tez://upi/pay?${query}`,
+      fallback: `upi://pay?${query}`
+    },
+    phonepe: {
+      android: `intent://pay?${query}#Intent;scheme=upi;package=com.phonepe.app;end`,
+      ios: `phonepe://pay?${query}`,
+      fallback: `upi://pay?${query}`
+    },
+    whatsapp: {
+      android: `intent://pay?${query}#Intent;scheme=upi;package=com.whatsapp;end`,
+      ios: `whatsapp://pay?${query}`,
+      fallback: `upi://pay?${query}`
+    },
+    generic: `upi://pay?${query}`
+  };
+}
+
+/**
  * Generates an inline SVG QR code server-side without external dependencies.
  */
 async function generateQrCodeSvg(upiUri) {
@@ -72,6 +102,13 @@ class UpiPaymentProvider {
       orderNo: orderNo
     });
 
+    const appUris = buildAppSpecificUpiUris({
+      vpa: config.upiVpa,
+      payeeName: config.upiPayeeName,
+      amount: total,
+      orderNo: orderNo
+    });
+
     const qrCodeSvg = await generateQrCodeSvg(upiUri);
     const whatsappProofUrl = buildWhatsAppProofLink(orderNo, total);
 
@@ -82,6 +119,10 @@ class UpiPaymentProvider {
       amountFormatted: Number(total).toFixed(2),
       currency: 'INR',
       upiUri,
+      appUris,
+      gpayUri: appUris.gpay,
+      phonepeUri: appUris.phonepe,
+      whatsappPayUri: appUris.whatsapp,
       qrCodeSvg,
       whatsappProofUrl,
       expiresAt: order.expires_at,

@@ -85,8 +85,9 @@ export function cleanUrl(val) {
     return null;
   }
 
-  if (/^\/products\/[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|webp|svg|avif)$/i.test(str)) {
-    return str;
+  const relativeMatch = str.match(/^\/?(products\/[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|webp|svg|avif))$/i);
+  if (relativeMatch) {
+    return '/' + relativeMatch[1];
   }
 
   try {

@@ -279,6 +279,39 @@ function initOrderPage() {
       }
     });
   }
+
+  // Dynamic mobile platform link adaptation for Google Pay, PhonePe, and WhatsApp Pay
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isMobile = isAndroid || isIOS;
+
+  const upiButtons = document.querySelectorAll('.upi-pay-btn');
+  upiButtons.forEach(btn => {
+    if (isAndroid && btn.dataset.android) {
+      btn.href = btn.dataset.android;
+    } else if (isIOS && btn.dataset.ios) {
+      btn.href = btn.dataset.ios;
+    } else if (btn.dataset.fallback) {
+      btn.href = btn.dataset.fallback;
+    }
+
+    if (!isMobile) {
+      btn.addEventListener('click', (e) => {
+        const qrEl = document.querySelector('.upi-qr-wrapper');
+        if (qrEl) {
+          e.preventDefault();
+          qrEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          qrEl.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
+          qrEl.style.transform = 'scale(1.05)';
+          qrEl.style.boxShadow = '0 0 0 3px var(--color-oxblood)';
+          setTimeout(() => {
+            qrEl.style.transform = 'scale(1)';
+            qrEl.style.boxShadow = 'none';
+          }, 1200);
+        }
+      });
+    }
+  });
 }
 
 // 7. Shop Collection Sort Control

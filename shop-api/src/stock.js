@@ -9,6 +9,7 @@ const {
   cleanString,
   cleanIdentifier,
   cleanInt,
+  cleanBool,
   cleanUrl
 } = require('./sanitize');
 
