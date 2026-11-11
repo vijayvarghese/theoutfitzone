@@ -6,7 +6,15 @@
 const express = require('express');
 const api = require('../api');
 const config = require('../config');
-const { constantTimeCompare, checkRateLimit, maskPhone } = require('../security');
+const {
+  constantTimeCompare,
+  checkRateLimit,
+  maskPhone,
+  cleanString,
+  cleanIdentifier,
+  cleanInt,
+  cleanBool
+} = require('../security');
 const { dispatchOrderWebhook } = require('../webhook');
 
 const router = express.Router();
@@ -83,9 +91,9 @@ router.get('/', (req, res) => {
  */
 router.get('/orders', async (req, res, next) => {
   try {
-    const status = req.query.status || '';
-    const q = req.query.q || '';
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const status = cleanString(req.query.status, { toUpper: true });
+    const q = cleanString(req.query.q);
+    const page = cleanInt(req.query.page, 1, 100000, 1);
     const limit = 25;
     const offset = (page - 1) * limit;
 
@@ -196,17 +204,21 @@ router.get('/orders/:orderNo', async (req, res, next) => {
  * 4. Status Transition Action
  */
 router.post('/orders/:orderNo/status', async (req, res) => {
-  const orderNo = req.params.orderNo.toUpperCase();
-  const { status, courier, awb, note, restock } = req.body;
+  const orderNo = cleanIdentifier(req.params.orderNo, '-');
+  const status = cleanString(req.body.status, { toUpper: true });
+  const courier = cleanString(req.body.courier, { maxLength: 80 });
+  const awb = cleanString(req.body.awb, { maxLength: 80 });
+  const note = cleanString(req.body.note, { maxLength: 500 });
+  const restock = cleanBool(req.body.restock !== 'false');
 
   try {
     const prevOrder = await api.getOrder(orderNo);
     await api.updateOrderStatus(orderNo, {
       status,
-      courier: courier ? String(courier).trim() : undefined,
-      awb: awb ? String(awb).trim() : undefined,
-      note: note ? String(note).trim() : undefined,
-      restock: restock === 'false' ? false : true
+      courier: courier || undefined,
+      awb: awb || undefined,
+      note: note || undefined,
+      restock
     });
 
     const updatedOrder = await api.getOrder(orderNo);
@@ -236,12 +248,12 @@ router.post('/orders/:orderNo/status', async (req, res) => {
  * 5. Mark Paid Action
  */
 router.post('/orders/:orderNo/paid', async (req, res) => {
-  const orderNo = req.params.orderNo.toUpperCase();
-  const { payment_ref } = req.body;
+  const orderNo = cleanIdentifier(req.params.orderNo, '-');
+  const payment_ref = cleanString(req.body.payment_ref, { maxLength: 120 });
 
   try {
     const prevOrder = await api.getOrder(orderNo);
-    await api.markOrderPaid(orderNo, payment_ref ? String(payment_ref).trim() : 'Manual Verification');
+    await api.markOrderPaid(orderNo, payment_ref || 'Manual Verification');
     const updatedOrder = await api.getOrder(orderNo);
 
     // Asynchronously dispatch webhook to n8n
@@ -288,19 +300,20 @@ router.get('/stock', async (req, res, next) => {
  * 7. Stock Adjustment Action
  */
 router.post('/stock/adjust', async (req, res) => {
-  const { sku, delta, reason } = req.body;
-  const numDelta = parseInt(delta, 10);
+  const sku = cleanIdentifier(req.body.sku, '-_');
+  const numDelta = cleanInt(req.body.delta, -100000, 100000, 0);
+  const reason = cleanString(req.body.reason, { maxLength: 100 });
 
-  if (!sku || isNaN(numDelta) || numDelta === 0 || !reason) {
+  if (!sku || numDelta === 0 || !reason) {
     req.session.adminError = 'SKU, non-zero integer adjustment, and audit reason are required.';
     return res.redirect('/admin/stock');
   }
 
   try {
     const result = await api.adjustStock({
-      sku: String(sku).trim(),
+      sku,
       delta: numDelta,
-      reason: String(reason).trim()
+      reason
     });
     req.session.adminNotice = `Stock adjusted for ${result.sku}: on hand now ${result.on_hand}, available ${result.available}.`;
   } catch (err) {

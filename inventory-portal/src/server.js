@@ -11,7 +11,8 @@ import ordersRouter from './routes/orders.js';
 import couponsRouter from './routes/coupons.js';
 import { authMiddleware } from './auth.js';
 import { uploadDir } from './upload.js';
-import { pool } from './db.js';
+import { api } from './api.js';
+import { sanitizeObjectKeys } from './sanitize.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +31,15 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
+
+// Prototype pollution prevention
+app.use((req, res, next) => {
+  if (req.body && typeof req.body === 'object') {
+    req.body = sanitizeObjectKeys(req.body);
+  }
+  next();
+});
+
 app.use(authMiddleware);
 
 // Static staff portal assets
@@ -45,12 +55,10 @@ app.use((req, res, next) => {
   const host = (req.get('host') || '').split(':')[0] || 'localhost';
   const proto = req.protocol || 'http';
 
-  // Dynamic storefront URL (defaults to current host at port 8085 if not configured or localhost)
   const storefrontUrl = (process.env.SITE_URL && !process.env.SITE_URL.includes('localhost'))
     ? process.env.SITE_URL.replace(/\/+$/, '')
     : `${proto}://${host}:8085`;
 
-  // Dynamic Nginx Media URL (defaults to current host at port 8083 if not configured or localhost)
   const nginxPreviewUrl = (process.env.NGINX_PREVIEW_URL && !process.env.NGINX_PREVIEW_URL.includes('localhost'))
     ? process.env.NGINX_PREVIEW_URL.replace(/\/+$/, '')
     : `${proto}://${host}:8083`;
@@ -85,12 +93,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Provide all silhouettes to authenticated staff views for universal layout modals
+// Provide all silhouettes to authenticated staff views for universal layout modals via store-api
 app.use(async (req, res, next) => {
   if (req.user) {
     try {
-      const prodRes = await pool.query('SELECT id, name, category, active FROM products ORDER BY name ASC');
-      res.locals.allProductList = prodRes.rows;
+      res.locals.allProductList = await api.getProductSummary();
     } catch {
       res.locals.allProductList = [];
     }
@@ -128,13 +135,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check
+// Health check (verifies store-api connectivity)
 app.get('/healthz', async (req, res) => {
   try {
-    await pool.query('SELECT 1;');
-    res.status(200).send('OK');
-  } catch (err) {
-    res.status(500).send('DB_DOWN');
+    const healthy = await api.checkHealth();
+    if (healthy) {
+      return res.status(200).send('OK');
+    }
+    res.status(503).send('STORE_API_UNAVAILABLE');
+  } catch {
+    res.status(500).send('PORTAL_ERROR');
   }
 });
 
@@ -169,11 +179,10 @@ app.use((err, req, res, next) => {
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`[Staff Inventory Portal] Listening on http://0.0.0.0:${PORT}`);
   console.log(`[Staff Inventory Portal] Media directory: ${uploadDir}`);
+  console.log(`[Staff Inventory Portal] Connected exclusively to store-api`);
 });
 
 process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server and DB pool');
-  server.close(() => {
-    pool.end();
-  });
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close();
 });

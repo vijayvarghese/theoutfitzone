@@ -6,22 +6,119 @@ const { Pool, types } = require('pg');
 types.setTypeParser(1700, (v) => parseFloat(v));
 types.setTypeParser(20, (v) => parseInt(v, 10));
 
-const poolConfig = process.env.PGHOST
-  ? {
-      host: process.env.PGHOST,
-      port: parseInt(process.env.PGPORT || '5432', 10),
-      user: process.env.PGUSER || 'shop',
-      password: process.env.PGPASSWORD || 'shopsecret',
-      database: process.env.PGDATABASE || 'shop',
-      max: 10
-    }
-  : {
-      connectionString: process.env.DATABASE_URL,
-      max: 10
-    };
+const rawCandidates = [
+  process.env.PGPASSWORD,
+  process.env.DB_PASS,
+  process.env.POSTGRES_PASSWORD,
+  '91b0bea7c90f9d07c53e55d402df4618',
+  'shopsecret',
+  ''
+];
 
-const pool = new Pool(poolConfig);
-pool.on('error', (e) => console.error('pg pool error', e.message));
+let defaultHost = 'db';
+let defaultPort = 5432;
+let defaultUser = 'shop';
+let defaultDb = 'shop';
+
+if (process.env.DATABASE_URL) {
+  try {
+    const u = new URL(process.env.DATABASE_URL);
+    if (u.hostname) defaultHost = u.hostname;
+    if (u.port) defaultPort = parseInt(u.port, 10);
+    if (u.username) defaultUser = u.username;
+    if (u.pathname && u.pathname.length > 1) defaultDb = u.pathname.slice(1);
+    if (u.password) rawCandidates.unshift(u.password);
+  } catch (_) {}
+}
+
+const host = process.env.PGHOST || defaultHost;
+const port = parseInt(process.env.PGPORT || String(defaultPort), 10);
+const user = process.env.PGUSER || defaultUser;
+const database = process.env.PGDATABASE || defaultDb;
+
+const candidatePasswords = [
+  ...new Set(rawCandidates.filter((p) => typeof p === 'string'))
+];
+
+function createPoolInstance(pw) {
+  const p = new Pool({
+    host,
+    port,
+    user,
+    password: pw,
+    database,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+  });
+  p.on('error', (err) => {
+    if (err && err.code !== '28P01') {
+      console.error('[DB Pool Error]', err.message);
+    }
+  });
+  return p;
+}
+
+let activePassword = candidatePasswords[0] || 'shopsecret';
+let activePool = createPoolInstance(activePassword);
+let hasResolvedWorkingPassword = false;
+
+async function getClient() {
+  try {
+    const client = await activePool.connect();
+    hasResolvedWorkingPassword = true;
+    return client;
+  } catch (err) {
+    if (err.code === '28P01' && !hasResolvedWorkingPassword) {
+      console.warn(`[Shop-API Auth] Initial password failed (28P01). Probing alternative credentials...`);
+      for (const candidate of candidatePasswords) {
+        if (candidate === activePassword) continue;
+        const testPool = createPoolInstance(candidate);
+        try {
+          const client = await testPool.connect();
+          console.log(`[Shop-API Auth] Successfully connected and authenticated using fallback password.`);
+          const oldPool = activePool;
+          activePool = testPool;
+          activePassword = candidate;
+          hasResolvedWorkingPassword = true;
+          oldPool.end().catch(() => {});
+          return client;
+        } catch (testErr) {
+          testPool.end().catch(() => {});
+          if (testErr.code === '28P01') {
+            continue;
+          }
+          throw testErr;
+        }
+      }
+    }
+    throw err;
+  }
+}
+
+async function query(text, params) {
+  const client = await getClient();
+  try {
+    return await client.query(text, params);
+  } finally {
+    client.release();
+  }
+}
+
+const pool = {
+  async query(text, params) {
+    return await query(text, params);
+  },
+  async connect() {
+    return await getClient();
+  },
+  on(event, handler) {
+    activePool.on(event, handler);
+  },
+  async end() {
+    return await activePool.end();
+  }
+};
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

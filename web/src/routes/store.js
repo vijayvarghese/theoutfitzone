@@ -9,7 +9,17 @@ const api = require('../api');
 const cart = require('../cart');
 const config = require('../config');
 const upiPayment = require('../payments/upi');
-const { checkRateLimit, maskPhone } = require('../security');
+const {
+  checkRateLimit,
+  maskPhone,
+  cleanString,
+  cleanIdentifier,
+  cleanInt,
+  cleanFloat,
+  cleanPhone,
+  cleanEmail,
+  cleanEnum
+} = require('../security');
 const { dispatchOrderWebhook } = require('../webhook');
 
 const router = express.Router();
@@ -59,9 +69,9 @@ router.get('/', async (req, res, next) => {
  */
 router.get('/shop', async (req, res, next) => {
   try {
-    const selectedCategory = req.query.category || '';
-    const searchQuery = req.query.q || '';
-    const sort = req.query.sort || 'newest';
+    const selectedCategory = cleanString(req.query.category);
+    const searchQuery = cleanString(req.query.q);
+    const sort = cleanString(req.query.sort, { toLower: true }) || 'newest';
 
     const rawProducts = await api.getProducts({
       category: selectedCategory,
@@ -167,7 +177,8 @@ router.get('/cart', async (req, res, next) => {
 });
 
 router.post('/cart/add', async (req, res) => {
-  const { sku, qty } = req.body;
+  const sku = cleanIdentifier(req.body.sku, '-_');
+  const qty = cleanInt(req.body.qty, 1, 50, 1);
   const isAjax = req.xhr || req.headers.accept?.includes('application/json');
 
   try {
@@ -187,7 +198,8 @@ router.post('/cart/add', async (req, res) => {
 });
 
 router.post('/cart/update', async (req, res) => {
-  const { sku, qty } = req.body;
+  const sku = cleanIdentifier(req.body.sku, '-_');
+  const qty = cleanInt(req.body.qty, 0, 50, 0);
   const isAjax = req.xhr || req.headers.accept?.includes('application/json');
 
   try {
@@ -205,7 +217,7 @@ router.post('/cart/update', async (req, res) => {
 });
 
 router.post('/cart/remove', async (req, res) => {
-  const { sku } = req.body;
+  const sku = cleanIdentifier(req.body.sku, '-_');
   const isAjax = req.xhr || req.headers.accept?.includes('application/json');
 
   try {
@@ -284,7 +296,7 @@ router.get('/checkout', async (req, res, next) => {
 });
 
 router.post('/checkout/apply-coupon', async (req, res) => {
-  const code = String(req.body.code || '').trim().toUpperCase();
+  const code = cleanIdentifier(req.body.code, '-_');
   const isAjax = req.xhr || req.headers.accept?.includes('application/json');
 
   if (!code) {
@@ -355,22 +367,25 @@ router.post('/checkout', async (req, res, next) => {
     idempotency_key
   } = req.body;
 
-  // Strict server-side validation
+  // Strict server-side validation and sanitization
   const errors = {};
-  const cleanName = String(name || '').trim();
-  const cleanEmail = String(email || '').trim().toLowerCase();
-  const cleanPhone = String(phone || '').replace(/\D/g, '');
-  const cleanAddress = String(address || '').trim();
-  const cleanPincode = String(pincode || '').trim();
-  const paymentMode = ['UPI', 'COD'].includes(payment_mode) ? payment_mode : 'UPI';
+  const cleanName = cleanString(name, { maxLength: 100 });
+  const rawEmail = cleanString(email, { toLower: true, maxLength: 150 });
+  const cleanEmailAddr = cleanEmail(rawEmail);
+  const cleanPhoneNum = cleanPhone(phone);
+  const cleanAddress = cleanString(address, { maxLength: 500, allowNewlines: true });
+  const cleanPincode = cleanString(pincode).replace(/\D/g, '');
+  const paymentMode = cleanEnum(payment_mode, ['UPI', 'COD'], 'UPI');
+  const cleanNotes = cleanString(notes, { maxLength: 500 });
+  const cleanIdemKey = cleanIdentifier(idempotency_key, '-_') || crypto.randomUUID();
 
   if (!cleanName || cleanName.length < 2) {
     errors.name = 'Please provide your full name.';
   }
-  if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+  if (rawEmail && !cleanEmailAddr) {
     errors.email = 'Please enter a valid email address or leave it blank.';
   }
-  if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+  if (!/^[6-9]\d{9}$/.test(cleanPhoneNum)) {
     errors.phone = 'Please enter a valid 10-digit Indian mobile number.';
   }
   if (!cleanAddress || cleanAddress.length < 10) {
@@ -402,16 +417,16 @@ router.post('/checkout', async (req, res, next) => {
       grandTotal,
       couponNotice: null,
       couponSuccess: null,
-      idempotencyKey: idempotency_key || crypto.randomUUID(),
+      idempotencyKey: cleanIdemKey,
       errors,
       form: {
         name: cleanName,
-        email: cleanEmail,
-        phone: cleanPhone,
+        email: cleanEmailAddr || '',
+        phone: cleanPhoneNum,
         address: cleanAddress,
         pincode: cleanPincode,
         payment_mode: paymentMode,
-        notes: notes || ''
+        notes: cleanNotes
       },
       site: config.siteContent,
       config
@@ -422,16 +437,16 @@ router.post('/checkout', async (req, res, next) => {
     channel: 'web',
     customer: {
       name: cleanName,
-      phone: cleanPhone,
-      email: cleanEmail || null
+      phone: cleanPhoneNum,
+      email: cleanEmailAddr || null
     },
     ship_address: cleanAddress,
     ship_pincode: cleanPincode,
     items: cartState.items.map(it => ({ sku: it.sku, qty: it.qty })),
     payment_mode: paymentMode,
     shipping: cartState.shipping,
-    notes: String(notes || '').trim(),
-    idempotency_key: idempotency_key || crypto.randomUUID(),
+    notes: cleanNotes,
+    idempotency_key: cleanIdemKey,
     coupon_code: coupon ? coupon.code : null
   };
 
@@ -517,13 +532,13 @@ router.get('/order/:orderNo', async (req, res, next) => {
  * 6. Order Tracking (/track)
  */
 router.get('/track', async (req, res, next) => {
-  const orderNo = (req.query.order || '').toUpperCase().trim();
-  const phone4 = (req.query.phone4 || '').trim();
+  const orderNo = cleanIdentifier(req.query.order, '-');
+  const phone4 = cleanPhone(req.query.phone4).slice(-4);
 
   let trackResult = null;
   let trackError = null;
 
-  if (orderNo && phone4) {
+  if (orderNo && phone4.length === 4) {
     const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
     if (!checkRateLimit(`track:${ip}`, 30, 600000)) {
       trackError = 'Too many tracking inquiries. Please wait a few minutes before trying again.';
@@ -555,9 +570,8 @@ router.get('/track', async (req, res, next) => {
 });
 
 router.post('/track', (req, res) => {
-  const { order_no, phone4 } = req.body;
-  const orderParam = encodeURIComponent(String(order_no || '').trim());
-  const phoneParam = encodeURIComponent(String(phone4 || '').trim());
+  const orderParam = encodeURIComponent(cleanIdentifier(req.body.order_no, '-'));
+  const phoneParam = encodeURIComponent(cleanPhone(req.body.phone4).slice(-4));
   res.redirect(`/track?order=${orderParam}&phone4=${phoneParam}`);
 });
 

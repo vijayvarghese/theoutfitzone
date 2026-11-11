@@ -1,11 +1,24 @@
 import express from 'express';
 import { requireAuth, requireRole } from '../auth.js';
-import { listOrders, getOrder, updateOrderStatus, markOrderPaid, STATUS_LIST } from '../orders-db.js';
+import { api } from '../api.js';
 import { dispatchOrderWebhook } from '../webhook.js';
+import { cleanString, cleanIdentifier, cleanInt } from '../sanitize.js';
 
 const router = express.Router();
 
-// Both Owner and Staff1 have access to orders; Stock Adder is excluded
+export const STATUS_LIST = [
+  'NEW',
+  'PENDING_PAYMENT',
+  'CONFIRMED',
+  'PACKED',
+  'SHIPPED',
+  'DELIVERED',
+  'RETURN_REQUESTED',
+  'RETURNED',
+  'CANCELLED',
+  'REFUNDED'
+];
+
 router.use(requireAuth);
 router.use(requireRole('owner', 'staff1'));
 
@@ -47,19 +60,20 @@ function buildCustomerWhatsAppUrl(order, storeName) {
  */
 router.get('/', async (req, res, next) => {
   try {
-    const status = req.query.status || '';
-    const q = req.query.q || '';
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const status = cleanString(req.query.status, { toUpper: true });
+    const q = cleanString(req.query.q);
+    const page = cleanInt(req.query.page, 1, 100000, 1);
     const limit = 25;
     const offset = (page - 1) * limit;
 
-    const result = await listOrders({ status, q, limit, offset });
-    const totalPages = Math.ceil(result.totalCount / limit) || 1;
+    const result = await api.listOrders({ status, q, limit, offset });
+    const totalCount = result.totalCount || 0;
+    const totalPages = Math.ceil(totalCount / limit) || 1;
 
     res.render('orders/index', {
       title: 'Customer Orders Fulfillment Queue',
-      orders: result.orders,
-      totalCount: result.totalCount,
+      orders: result.orders || [],
+      totalCount,
       statusList: STATUS_LIST,
       status,
       q,
@@ -77,13 +91,13 @@ router.get('/', async (req, res, next) => {
  */
 router.get('/:orderNo', async (req, res, next) => {
   try {
-    const orderNo = req.params.orderNo.toUpperCase();
-    const order = await getOrder(orderNo);
+    const orderNo = cleanIdentifier(req.params.orderNo, '-');
+    const order = await api.getOrder(orderNo);
 
     if (!order) {
       return res.status(404).render('error', {
         title: 'Order Not Found',
-        message: `Order #${orderNo} was not found in the database.`
+        message: `Order #${orderNo} was not found.`
       });
     }
 
@@ -103,22 +117,26 @@ router.get('/:orderNo', async (req, res, next) => {
  * POST /orders/:orderNo/status
  */
 router.post('/:orderNo/status', async (req, res) => {
-  const orderNo = req.params.orderNo.toUpperCase();
-  const { status, courier, awb, note, restock } = req.body;
+  const orderNo = cleanIdentifier(req.params.orderNo, '-');
+  const status = cleanString(req.body.status, { toUpper: true });
+  const courier = cleanString(req.body.courier, { maxLength: 80 });
+  const awb = cleanString(req.body.awb, { maxLength: 80 });
+  const note = cleanString(req.body.note, { maxLength: 500 });
+  const restock = req.body.restock !== 'false';
   const actor = req.user ? `${req.user.name} [${req.user.role}]` : 'Staff';
 
   try {
-    const prevOrder = await getOrder(orderNo);
+    const prevOrder = await api.getOrder(orderNo);
 
-    await updateOrderStatus(orderNo, {
+    await api.updateOrderStatus(orderNo, {
       status,
-      courier,
-      awb,
-      note,
-      restock: restock !== 'false'
+      courier: courier || undefined,
+      awb: awb || undefined,
+      note: note || undefined,
+      restock
     }, actor);
 
-    const updatedOrder = await getOrder(orderNo);
+    const updatedOrder = await api.getOrder(orderNo);
     if (updatedOrder) {
       dispatchOrderWebhook({
         event: status === 'CANCELLED' ? 'order.cancelled' : 'order.status_updated',
@@ -126,7 +144,7 @@ router.post('/:orderNo/status', async (req, res) => {
         actor,
         order: updatedOrder,
         previousStatus: prevOrder?.status
-      }).catch(err => console.error('[webhook dispatch error]', err));
+      }).catch((err) => console.error('[webhook dispatch error]', err));
     }
 
     res.redirect(`/orders/${encodeURIComponent(orderNo)}?flash=${encodeURIComponent(`Order #${orderNo} transitioned to ${status}.`)}`);
@@ -139,16 +157,16 @@ router.post('/:orderNo/status', async (req, res) => {
  * POST /orders/:orderNo/paid
  */
 router.post('/:orderNo/paid', async (req, res) => {
-  const orderNo = req.params.orderNo.toUpperCase();
-  const { payment_ref } = req.body;
+  const orderNo = cleanIdentifier(req.params.orderNo, '-');
+  const payment_ref = cleanString(req.body.payment_ref, { maxLength: 120 }) || 'Verified by staff';
   const actor = req.user ? `${req.user.name} [${req.user.role}]` : 'Staff';
 
   try {
-    const prevOrder = await getOrder(orderNo);
+    const prevOrder = await api.getOrder(orderNo);
 
-    await markOrderPaid(orderNo, payment_ref, actor);
+    await api.markOrderPaid(orderNo, payment_ref, actor);
 
-    const updatedOrder = await getOrder(orderNo);
+    const updatedOrder = await api.getOrder(orderNo);
     if (updatedOrder) {
       dispatchOrderWebhook({
         event: 'order.paid',
@@ -156,7 +174,7 @@ router.post('/:orderNo/paid', async (req, res) => {
         actor,
         order: updatedOrder,
         previousStatus: prevOrder?.status
-      }).catch(err => console.error('[webhook dispatch error]', err));
+      }).catch((err) => console.error('[webhook dispatch error]', err));
     }
 
     res.redirect(`/orders/${encodeURIComponent(orderNo)}?flash=${encodeURIComponent(`Payment marked PAID for Order #${orderNo}.`)}`);

@@ -4,9 +4,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: shop
-      POSTGRES_PASSWORD: ${DB_PASS:-${POSTGRES_PASSWORD:-shopsecret}}
+      POSTGRES_PASSWORD: ${DB_PASS:-shopsecret}
       POSTGRES_DB: shop
-      POSTGRES_HOST_AUTH_METHOD: trust
       TZ: Asia/Kolkata
     volumes:
       - pgdata_v4:/var/lib/postgresql/data
@@ -18,8 +17,9 @@ services:
       retries: 10
 
   shop-api:
-    image: ${API_IMAGE}
-    pull_policy: always
+    build:
+      context: ./shop-api
+    image: ${API_IMAGE:-shop-api:latest}
     restart: unless-stopped
     depends_on:
       db:
@@ -28,9 +28,9 @@ services:
       PGHOST: db
       PGPORT: "5432"
       PGUSER: shop
-      PGPASSWORD: ${DB_PASS:-${POSTGRES_PASSWORD:-shopsecret}}
+      PGPASSWORD: ${DB_PASS:-shopsecret}
       PGDATABASE: shop
-      DATABASE_URL: postgres://shop:${DB_PASS:-${POSTGRES_PASSWORD:-shopsecret}}@db:5432/shop
+      DATABASE_URL: postgres://shop:${DB_PASS:-shopsecret}@db:5432/shop
       API_KEY: ${API_KEY}
       ORDER_PREFIX: DS
       RESERVATION_MINUTES: "30"
@@ -42,14 +42,17 @@ services:
       retries: 5
 
   web:
-    image: ${WEB_IMAGE}
-    pull_policy: always
+    build:
+      context: ./web
+    image: ${WEB_IMAGE:-shop-web:latest}
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-8085}:3000"
+      - "${WEB_PORT:-8081}:3000"
     depends_on:
-      - shop-api
-      - nginx-media
+      shop-api:
+        condition: service_healthy
+      nginx-media:
+        condition: service_healthy
     volumes:
       - media-uploads:/app/public/products
     environment:
@@ -61,7 +64,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-atelier-secret-admin}
       STORE_NAME: ${STORE_NAME:-The OutFit Zone}
       STORE_TAGLINE: ${STORE_TAGLINE:-Wear Your Attitude}
-      SITE_URL: ${SITE_URL}
+      SITE_URL: ${SITE_URL:-http://localhost:8081}
       UPI_VPA: ${UPI_VPA}
       UPI_PAYEE_NAME: ${UPI_PAYEE_NAME}
       WHATSAPP_NUMBER: ${WHATSAPP_NUMBER}
@@ -75,33 +78,36 @@ services:
       FREE_SHIPPING_ABOVE: ${FREE_SHIPPING_ABOVE:-2500}
       TRUST_PROXY: "true"
       N8N_ORDER_WEBHOOK_URL: ${N8N_ORDER_WEBHOOK_URL:-}
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     networks:
       - default
       - dokploy-network
 
   inventory-portal:
-    image: ${PORTAL_IMAGE}
-    pull_policy: always
+    build:
+      context: ./inventory-portal
+    image: ${PORTAL_IMAGE:-inventory-portal:latest}
     restart: unless-stopped
     ports:
       - "8082:3000"
     depends_on:
-      db:
+      shop-api:
         condition: service_healthy
       nginx-media:
         condition: service_healthy
     volumes:
       - media-uploads:/app/uploads
     environment:
-      PGHOST: db
-      PGPORT: "5432"
-      PGUSER: shop
-      PGPASSWORD: ${DB_PASS:-${POSTGRES_PASSWORD:-shopsecret}}
-      PGDATABASE: shop
-      DATABASE_URL: postgres://shop:${DB_PASS:-${POSTGRES_PASSWORD:-shopsecret}}@db:5432/shop
+      SHOP_API_URL: http://shop-api:3000
+      SHOP_API_KEY: ${API_KEY}
       PORT: "3000"
       STORE_NAME: ${STORE_NAME:-The OutFit Zone}
-      SITE_URL: ${SITE_URL}
+      SITE_URL: ${SITE_URL:-http://localhost:8081}
       PUBLIC_MEDIA_URL: ${PUBLIC_MEDIA_URL:-/products}
       NGINX_PREVIEW_URL: ${NGINX_PREVIEW_URL:-}
       AUTH_USER_OWNER: ${AUTH_USER_OWNER}
@@ -110,6 +116,12 @@ services:
       SESSION_SECRET: ${PORTAL_SESSION_SECRET}
       N8N_ORDER_WEBHOOK_URL: ${N8N_ORDER_WEBHOOK_URL:-}
       TRUST_PROXY: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     networks:
       - default
       - dokploy-network
@@ -127,6 +139,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - default
+      - dokploy-network
 
 volumes:
   pgdata_v4:

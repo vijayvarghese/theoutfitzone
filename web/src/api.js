@@ -20,13 +20,10 @@ async function request(endpoint, options = {}) {
   const url = `${config.shopApiUrl}${endpoint}`;
   const headers = {
     'Accept': 'application/json',
+    'X-API-Key': config.shopApiKey,
+    'X-Actor': options.actor || 'web-app',
     ...(options.headers || {})
   };
-
-  if (options.requireKey) {
-    headers['X-API-Key'] = config.shopApiKey;
-    headers['X-Actor'] = options.actor || 'web-app';
-  }
 
   if (options.body && typeof options.body === 'object') {
     headers['Content-Type'] = 'application/json';

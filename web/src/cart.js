@@ -6,6 +6,7 @@
  */
 const api = require('./api');
 const config = require('./config');
+const { cleanIdentifier, cleanInt } = require('./security');
 
 function getRawCart(req) {
   if (!req.session) return [];
@@ -25,9 +26,9 @@ async function syncCart(req) {
   const notices = [];
 
   for (const item of rawItems) {
-    const sku = String(item.sku || '').trim();
-    let qty = parseInt(item.qty, 10);
-    if (!sku || isNaN(qty) || qty <= 0) continue;
+    const sku = cleanIdentifier(item && item.sku, '-_');
+    let qty = cleanInt(item && item.qty, 1, 100, 0);
+    if (!sku || qty <= 0) continue;
 
     try {
       const stock = await api.getStock(sku);
@@ -94,8 +95,8 @@ async function syncCart(req) {
 }
 
 async function addItem(req, sku, qtyToAdd = 1) {
-  const skuClean = String(sku || '').trim();
-  const qty = Math.max(1, parseInt(qtyToAdd, 10) || 1);
+  const skuClean = cleanIdentifier(sku, '-_');
+  const qty = cleanInt(qtyToAdd, 1, 50, 1);
   if (!skuClean) throw new Error('Valid SKU is required');
 
   const stock = await api.getStock(skuClean);
@@ -121,11 +122,11 @@ async function addItem(req, sku, qtyToAdd = 1) {
 }
 
 async function updateItem(req, sku, newQty) {
-  const skuClean = String(sku || '').trim();
-  const qty = parseInt(newQty, 10);
+  const skuClean = cleanIdentifier(sku, '-_');
+  const qty = cleanInt(newQty, 0, 100, 0);
   let rawCart = getRawCart(req);
 
-  if (isNaN(qty) || qty <= 0) {
+  if (qty <= 0) {
     rawCart = rawCart.filter(it => it.sku !== skuClean);
   } else {
     const item = rawCart.find(it => it.sku === skuClean);
@@ -137,7 +138,7 @@ async function updateItem(req, sku, newQty) {
 }
 
 async function removeItem(req, sku) {
-  const skuClean = String(sku || '').trim();
+  const skuClean = cleanIdentifier(sku, '-_');
   const rawCart = getRawCart(req);
   req.session.cart = rawCart.filter(it => it.sku !== skuClean);
   return await syncCart(req);

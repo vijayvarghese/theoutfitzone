@@ -5,8 +5,8 @@
  */
 const { spawn } = require('child_process');
 
-const MOCK_PORT = 3001;
-const APP_PORT = 8081;
+const MOCK_PORT = process.env.MOCK_PORT ? parseInt(process.env.MOCK_PORT, 10) : 3001;
+const APP_PORT = process.env.APP_PORT ? parseInt(process.env.APP_PORT, 10) : 8081;
 const BASE_URL = `http://127.0.0.1:${APP_PORT}`;
 
 function sleep(ms) {
@@ -254,7 +254,7 @@ async function run() {
       },
       body: JSON.stringify({ sku: 'KOR-IND-L', qty: 1, csrf_token: oosCsrf })
     });
-    console.log('ADD RES STATUS:', oosAddRes.status); const addRawCookies = typeof oosAddRes.headers.getSetCookie === 'function' ? oosAddRes.headers.getSetCookie() : [oosAddRes.headers.get('set-cookie')];
+    const addRawCookies = typeof oosAddRes.headers.getSetCookie === 'function' ? oosAddRes.headers.getSetCookie() : [oosAddRes.headers.get('set-cookie')];
     for (const c of addRawCookies) {
       if (!c) continue;
       const parts = c.split(';')[0].split('=');

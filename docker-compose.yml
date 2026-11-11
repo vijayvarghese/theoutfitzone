@@ -16,19 +16,6 @@ services:
       timeout: 5s
       retries: 10
 
-  nocodb:
-    image: nocodb/nocodb:latest
-    restart: unless-stopped
-    environment:
-      NC_ALLOW_LOCAL_EXTERNAL_DBS: "true"
-    depends_on:
-      db:
-        condition: service_healthy
-    ports:
-      - "127.0.0.1:8080:8080"   # local access only; remote access comes later via Cloudflare Tunnel
-    volumes:
-      - nocodb_data:/usr/app/data
-
   shop-api:
     build: ./shop-api
     restart: unless-stopped
@@ -111,12 +98,12 @@ services:
       retries: 5
       start_period: 3s
 
-  # Dedicated Store Staff Inventory Management Service (Direct Postgres Connection, Zero Storefront coupling)
+  # Dedicated Store Staff Inventory Management Service (Exclusively connects to shop-api with API key, NO direct database access)
   inventory-portal:
     build: ./inventory-portal
     restart: unless-stopped
     depends_on:
-      db:
+      shop-api:
         condition: service_healthy
       nginx-media:
         condition: service_healthy
@@ -125,7 +112,8 @@ services:
     volumes:
       - ./media-uploads:/app/uploads
     environment:
-      DATABASE_URL: postgres://shop:${DB_PASS}@db:5432/shop
+      SHOP_API_URL: http://shop-api:3000
+      SHOP_API_KEY: ${API_KEY}
       PORT: "3000"
       STORE_NAME: ${STORE_NAME:-Aura & Thread Atelier}
       SITE_URL: ${SITE_URL:-http://localhost:8081}
@@ -147,4 +135,3 @@ services:
 
 volumes:
   pgdata:
-  nocodb_data:
