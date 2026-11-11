@@ -149,14 +149,6 @@
   </div>
 </div>
 
-    <% if (order.allowedTransitions.length === 0 && !order.canMarkPaid) { %>
-      <div style="font-size: 13px; color: var(--text-muted);">
-        No further status transitions permitted. This order is in terminal state [<%= order.status %>].
-      </div>
-    <% } %>
-  </div>
-</div>
-
 <!-- Order Grid Details -->
 <div class="order-detail-grid">
   <!-- Left Column: Line Items & Audit Trail -->

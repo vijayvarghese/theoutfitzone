@@ -38,7 +38,7 @@
 
 html {
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -51,7 +51,7 @@ body {
   display: flex;
   flex-direction: column;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
 }
 
@@ -61,7 +61,6 @@ body {
   min-height: 100vh;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
   min-width: 0;
 }
 
@@ -219,7 +218,6 @@ body {
   flex-direction: column;
   min-width: 0;
   max-width: 100%;
-  overflow-x: hidden;
 }
 
 .topbar {
@@ -380,6 +378,8 @@ body {
   box-shadow: var(--shadow-sm);
   margin-bottom: 24px;
   overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .card-header {
@@ -636,6 +636,8 @@ body {
   -webkit-overflow-scrolling: touch;
   background-color: #FFFFFF;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .portal-table, .data-table {
