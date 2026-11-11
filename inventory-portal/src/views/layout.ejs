@@ -9,14 +9,20 @@
 </head>
 <body>
   <div class="app-container">
+    <!-- Mobile Backdrop Overlay -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
     <!-- Sidebar Navigation -->
-    <aside class="app-sidebar">
+    <aside class="app-sidebar" id="app-sidebar">
       <div class="sidebar-header">
-        <span class="brand-badge">HQ</span>
-        <div>
-          <div class="brand-title"><%= storeName %></div>
-          <div class="brand-sub">Store Inventory System</div>
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <span class="brand-badge">HQ</span>
+          <div class="brand-text-wrap">
+            <div class="brand-title"><%= storeName %></div>
+            <div class="brand-sub">Store Inventory System</div>
+          </div>
         </div>
+        <button type="button" class="sidebar-close-btn" id="btn-sidebar-close" aria-label="Close navigation">&times;</button>
       </div>
 
       <nav class="sidebar-nav">
@@ -127,7 +133,7 @@
           </div>
         <% } %>
         <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-top: 1px solid #1F2937; padding-top: 6px; font-size: 11px;">
-          <span>Postgres Connected</span>
+          <span>Store API Connected</span>
           <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10B981;"></span>
         </div>
       </div>
@@ -136,9 +142,18 @@
     <!-- Main Content Area -->
     <div class="app-main">
       <header class="topbar">
-        <h1 class="topbar-title">
-          <%= typeof title !== 'undefined' ? title : 'Inventory Management' %>
-        </h1>
+        <div class="topbar-left">
+          <button type="button" class="sidebar-toggle-btn" id="btn-sidebar-toggle" aria-label="Open navigation menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <h1 class="topbar-title">
+            <%= typeof title !== 'undefined' ? title : 'Inventory Management' %>
+          </h1>
+        </div>
 
         <div class="topbar-actions">
           <% if (typeof canManageCatalog !== 'undefined' && canManageCatalog) { %>
@@ -154,7 +169,7 @@
             </button>
           <% } %>
           <% if (typeof user !== 'undefined' && user) { %>
-            <div class="badge" style="background: #F3F4F6; color: #1F2937; padding: 6px 12px; font-weight: 600;">
+            <div class="badge user-role-badge" style="background: #F3F4F6; color: #1F2937; padding: 6px 12px; font-weight: 600;">
               <%= user.badge %>
             </div>
           <% } %>
@@ -205,7 +220,7 @@
             <input type="text" name="sku" class="form-input" style="width: 100%; font-family: var(--font-mono); text-transform: uppercase;" placeholder="e.g. MSK-IVR-XXL (Leave blank to auto-generate)">
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="modal-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group">
               <label class="form-label">Size</label>
               <input type="text" name="size" class="form-input" style="width: 100%;" placeholder="e.g. S, M, L, Free Size" value="Free Size">
@@ -222,7 +237,7 @@
             <div class="form-hint">Displayed on the customer storefront when this colour is selected. Leave empty to use silhouette default.</div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="modal-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group">
               <label class="form-label">Initial Physical On-Hand</label>
               <input type="number" name="on_hand" class="form-input" style="width: 100%;" value="10" min="0">
@@ -359,7 +374,7 @@
             <label class="form-label">SKU</label>
             <input type="text" name="sku" class="form-input" style="width: 100%; font-family: var(--font-mono); text-transform: uppercase;" required>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="modal-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group">
               <label class="form-label">Size</label>
               <input type="text" name="size" class="form-input" style="width: 100%;" placeholder="e.g. XS, M, L">

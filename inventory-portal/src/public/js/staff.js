@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       document.querySelectorAll('.modal-overlay.is-active').forEach(closeModal);
+      if (typeof closeSidebar === 'function') closeSidebar();
     }
   });
 
@@ -296,4 +297,54 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // 9. Mobile Sidebar Off-Canvas Drawer Navigation
+  const sidebar = document.getElementById('app-sidebar');
+  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  const btnSidebarToggle = document.getElementById('btn-sidebar-toggle');
+  const btnSidebarClose = document.getElementById('btn-sidebar-close');
+
+  function openSidebar() {
+    if (sidebar) sidebar.classList.add('is-open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.add('is-active');
+    document.body.classList.add('sidebar-open');
+  }
+
+  function closeSidebar() {
+    if (sidebar) sidebar.classList.remove('is-open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove('is-active');
+    document.body.classList.remove('sidebar-open');
+  }
+
+  window.openSidebar = openSidebar;
+  window.closeSidebar = closeSidebar;
+
+  if (btnSidebarToggle) {
+    btnSidebarToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openSidebar();
+    });
+  }
+
+  if (btnSidebarClose) {
+    btnSidebarClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeSidebar();
+    });
+  }
+
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener('click', () => {
+      closeSidebar();
+    });
+  }
+
+  // Auto-close mobile drawer when tapping any navigation link
+  document.querySelectorAll('.app-sidebar .nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        closeSidebar();
+      }
+    });
+  });
 });

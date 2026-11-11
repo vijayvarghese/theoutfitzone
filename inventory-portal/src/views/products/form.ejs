@@ -18,7 +18,7 @@
         <input type="text" id="name" name="name" class="form-input" style="width: 100%;" value="<%= product.name || '' %>" placeholder="e.g. Handspun Maheshwari Silk Kurta" required autofocus>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px;">
+      <div class="form-grid-2" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px;">
         <div class="form-group">
           <label class="form-label" for="category-select">Category</label>
           <select id="category-select" name="category" class="form-select" style="width: 100%;">
@@ -108,31 +108,35 @@
           Every purchasable silhouette requires at least one variant SKU with physical stock. Leave SKU empty to automatically generate standard codes.
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">
-          <span>SKU</span>
-          <span>Size</span>
-          <span>Colour</span>
-          <span>On Hand</span>
-          <span>Reorder</span>
-          <span></span>
-        </div>
+        <div class="table-responsive" style="margin-bottom: 12px;">
+          <div style="min-width: 540px;">
+            <div style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">
+              <span>SKU</span>
+              <span>Size</span>
+              <span>Colour</span>
+              <span>On Hand</span>
+              <span>Reorder</span>
+              <span></span>
+            </div>
 
-        <div id="initial-variants-container">
-          <div class="variant-builder-row" style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; align-items: center;">
-            <input type="text" name="var_sku" class="form-input var-sku-input" placeholder="Auto-generated if empty" style="font-family: var(--font-mono); text-transform: uppercase;">
-            <input type="text" name="var_size" class="form-input var-size-input" value="M" placeholder="M">
-            <input type="text" name="var_colour" class="form-input var-colour-input" value="Standard" placeholder="Standard">
-            <input type="number" name="var_stock" class="form-input" value="10" min="0">
-            <input type="number" name="var_reorder" class="form-input" value="2" min="0">
-            <button type="button" class="btn btn-sm btn-outline-danger" style="padding: 0; width: 34px; height: 38px;" onclick="this.closest('.variant-builder-row').remove()" title="Remove row">✕</button>
-          </div>
-          <div class="variant-builder-row" style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; align-items: center;">
-            <input type="text" name="var_sku" class="form-input var-sku-input" placeholder="Auto-generated if empty" style="font-family: var(--font-mono); text-transform: uppercase;">
-            <input type="text" name="var_size" class="form-input var-size-input" value="L" placeholder="L">
-            <input type="text" name="var_colour" class="form-input var-colour-input" value="Standard" placeholder="Standard">
-            <input type="number" name="var_stock" class="form-input" value="10" min="0">
-            <input type="number" name="var_reorder" class="form-input" value="2" min="0">
-            <button type="button" class="btn btn-sm btn-outline-danger" style="padding: 0; width: 34px; height: 38px;" onclick="this.closest('.variant-builder-row').remove()" title="Remove row">✕</button>
+            <div id="initial-variants-container">
+              <div class="variant-builder-row" style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; align-items: center;">
+                <input type="text" name="var_sku" class="form-input var-sku-input" placeholder="Auto-generated if empty" style="font-family: var(--font-mono); text-transform: uppercase;">
+                <input type="text" name="var_size" class="form-input var-size-input" value="M" placeholder="M">
+                <input type="text" name="var_colour" class="form-input var-colour-input" value="Standard" placeholder="Standard">
+                <input type="number" name="var_stock" class="form-input" value="10" min="0">
+                <input type="number" name="var_reorder" class="form-input" value="2" min="0">
+                <button type="button" class="btn btn-sm btn-outline-danger" style="padding: 0; width: 34px; height: 38px;" onclick="this.closest('.variant-builder-row').remove()" title="Remove row">✕</button>
+              </div>
+              <div class="variant-builder-row" style="display: grid; grid-template-columns: 1fr 100px 120px 100px 90px 36px; gap: 8px; margin-bottom: 8px; align-items: center;">
+                <input type="text" name="var_sku" class="form-input var-sku-input" placeholder="Auto-generated if empty" style="font-family: var(--font-mono); text-transform: uppercase;">
+                <input type="text" name="var_size" class="form-input var-size-input" value="L" placeholder="L">
+                <input type="text" name="var_colour" class="form-input var-colour-input" value="Standard" placeholder="Standard">
+                <input type="number" name="var_stock" class="form-input" value="10" min="0">
+                <input type="number" name="var_reorder" class="form-input" value="2" min="0">
+                <button type="button" class="btn btn-sm btn-outline-danger" style="padding: 0; width: 34px; height: 38px;" onclick="this.closest('.variant-builder-row').remove()" title="Remove row">✕</button>
+              </div>
+            </div>
           </div>
         </div>
       <% } else if (variants && variants.length > 0) { %>
