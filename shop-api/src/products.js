@@ -186,12 +186,19 @@ async function createProduct(payload) {
   }
 
   const category = cleanString(payload.category, { maxLength: 100 }) || null;
+  if (!category) {
+    throw badRequest('Category is required');
+  }
+
   const price = cleanFloat(payload.price_inr, 0, 10000000, 2, -1);
   if (price < 0) {
     throw badRequest('Please enter a valid base price in INR (non-negative number)');
   }
 
   const description = cleanString(payload.description, { maxLength: 5000, allowNewlines: true }) || null;
+  if (!description) {
+    throw badRequest('Description is required');
+  }
   const imageUrl = cleanUrl(payload.image_url);
   const active = cleanBool(payload.active);
 
@@ -275,12 +282,19 @@ async function updateProduct(id, payload) {
   }
 
   const category = cleanString(payload.category, { maxLength: 100 }) || null;
+  if (!category) {
+    throw badRequest('Category is required');
+  }
+
   const price = cleanFloat(payload.price_inr, 0, 10000000, 2, -1);
   if (price < 0) {
     throw badRequest('Please enter a valid base price in INR (non-negative number)');
   }
 
   const description = cleanString(payload.description, { maxLength: 5000, allowNewlines: true }) || null;
+  if (!description) {
+    throw badRequest('Description is required');
+  }
 
   let finalImageUrl = existing.rows[0].image_url;
   if (payload.remove_image === '1' || payload.remove_image === true) {

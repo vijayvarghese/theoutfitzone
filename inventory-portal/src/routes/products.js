@@ -85,11 +85,16 @@ router.post('/', requireRole('owner', 'stock_adder'), upload.single('image'), as
     if (!name || name.length < 2) {
       throw new Error('Product name must be at least 2 characters long.');
     }
+    const finalCategory = custom_category || (category && category !== '__new__' ? category : null);
+    if (!finalCategory || finalCategory.trim().length === 0) {
+      throw new Error('Category is required. Please select or enter a category.');
+    }
     if (priceNum < 0) {
       throw new Error('Please enter a valid base price in INR.');
     }
-
-    const finalCategory = custom_category || (category && category !== '__new__' ? category : null);
+    if (!description || description.trim().length === 0) {
+      throw new Error('Detailed description is required.');
+    }
 
     let imageUrl = null;
     if (req.file) {
@@ -182,11 +187,16 @@ router.post('/:id', requireRole('owner', 'stock_adder'), upload.single('image'),
     if (!name || name.length < 2) {
       throw new Error('Product name is required.');
     }
+    const finalCategory = custom_category || (category && category !== '__new__' ? category : null);
+    if (!finalCategory || finalCategory.trim().length === 0) {
+      throw new Error('Category is required. Please select or enter a category.');
+    }
     if (priceNum < 0) {
       throw new Error('Please enter a valid base price in INR.');
     }
-
-    const finalCategory = custom_category || (category && category !== '__new__' ? category : null);
+    if (!description || description.trim().length === 0) {
+      throw new Error('Detailed description is required.');
+    }
 
     let imageUrl = undefined;
     if (remove_image) {

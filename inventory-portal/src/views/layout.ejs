@@ -206,7 +206,7 @@
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label class="form-label">Parent Silhouette / Product</label>
+            <label class="form-label">Parent Silhouette / Product *</label>
             <select name="product_id" id="modal-add-variant-product" class="form-select" style="width: 100%;" required>
               <option value="">-- Choose Silhouette --</option>
               <% (typeof allProductList !== 'undefined' ? allProductList : []).forEach(p => { %>
@@ -222,12 +222,12 @@
 
           <div class="modal-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group">
-              <label class="form-label">Size</label>
-              <input type="text" name="size" class="form-input" style="width: 100%;" placeholder="e.g. S, M, L, Free Size" value="Free Size">
+              <label class="form-label">Size *</label>
+              <input type="text" name="size" class="form-input" style="width: 100%;" placeholder="e.g. S, M, L, Free Size" value="Free Size" required>
             </div>
             <div class="form-group">
-              <label class="form-label">Colour</label>
-              <input type="text" name="colour" class="form-input" style="width: 100%;" placeholder="e.g. Ivory, Sage Green" value="Standard">
+              <label class="form-label">Colour *</label>
+              <input type="text" name="colour" class="form-input" style="width: 100%;" placeholder="e.g. Ivory, Sage Green" value="Standard" required>
             </div>
           </div>
 
@@ -239,12 +239,12 @@
 
           <div class="modal-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group">
-              <label class="form-label">Initial Physical On-Hand</label>
-              <input type="number" name="on_hand" class="form-input" style="width: 100%;" value="10" min="0">
+              <label class="form-label">Initial Physical On-Hand *</label>
+              <input type="number" name="on_hand" class="form-input" style="width: 100%;" value="10" min="0" required>
             </div>
             <div class="form-group">
-              <label class="form-label">Reorder Level Threshold</label>
-              <input type="number" name="reorder_level" class="form-input" style="width: 100%;" value="2" min="0">
+              <label class="form-label">Reorder Level Threshold *</label>
+              <input type="number" name="reorder_level" class="form-input" style="width: 100%;" value="2" min="0" required>
             </div>
           </div>
         </div>
